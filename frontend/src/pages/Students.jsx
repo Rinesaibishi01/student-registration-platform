@@ -79,14 +79,14 @@ function Students() {
       <div className="content-area">
         <div className="inner-container">
             <div className="list-wrapper">
-                <h2 className="list-title">Studentët e Regjistruar</h2>
+              <h2 className="list-title">Studentët e Regjistruar</h2>
                 <div className="student-list">
                 {students.length > 0 ? (
                     students.map(s => (
                     <div key={s.id} className="students-item">
                         <p><strong>ID:</strong> {s.numri_studentit}</p>
                         <p><strong>Viti Akademik:</strong> {s.viti_studimit}</p>
-                    </div>
+                    </div> 
                     ))
                 ) : (
                     <p>VAZHDIM...</p>
