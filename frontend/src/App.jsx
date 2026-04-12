@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import Students from "./pages/Students.jsx";
+import Students from "./pages/home.jsx";
 import Register from "./pages/Register.jsx";
 
 function App() {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import "./Students.css"; 
+import "./home.css"; 
 import { Link } from "react-router-dom";
 
 function Students() {
