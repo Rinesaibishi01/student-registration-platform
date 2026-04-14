@@ -1,21 +1,17 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useState } from "react";
 import "./home.css"; 
 import { Link } from "react-router-dom";
+import AuthModal from "../components/AuthModal"; 
 
 function Students() {
-  const [students, setStudents] = useState([]);
-
-  useEffect(() => {
-    axios.get("http://localhost:5000/students")
-      .then(res => {
-        setStudents(res.data);
-      })
-      .catch(err => console.log("Gabim gjatë marrjes së të dhënave:", err));
-  }, []);
+  // State i vetëm që na duhet për të hapur/mbyllur dritaren
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <div className="main-container">
+      {/* Ky komponent rri "i fshehur" dhe aktivizohet vetëm kur isModalOpen bëhet true */}
+      <AuthModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
       {/* TOP BAR */}
       <div className="top-bar">
         <div className="inner-container">
@@ -23,7 +19,10 @@ function Students() {
             <span>📧 info@student-management.com</span>
           </div>
           <div className="top-links">
-            <a href="#">Login</a>
+            {/* Kyçja tani hap modalin direkt */}
+            <a href="#" onClick={(e) => { e.preventDefault(); setIsModalOpen(true); }}>
+              Login
+            </a>
           </div>
         </div>
       </div>
@@ -35,13 +34,26 @@ function Students() {
           <ul className="nav-menu">
             <li>Ballina</li>
             <li>Kurset</li>
-            <li>Studentët</li>
+            <li><Link to="/dashboard">Studentët</Link></li>
             <li>Kontakt</li>
           </ul>
-          {/* Butoni i lidhur me faqen e regjistrimit */}
-          <Link to="/register" className="btn-pickup" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>
+          
+          {/* NDRYSHUAR: Butoni tani vetëm hap modalin, nuk të dërgon në faqe tjetër */}
+          <button 
+            onClick={() => setIsModalOpen(true)} 
+            className="btn-pickup" 
+            style={{ 
+              backgroundColor: '#d32f2f', // Ngjyra e kuqe profesionale
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '10px 20px',
+              borderRadius: '8px',
+              fontWeight: 'bold'
+            }}
+          >
             Regjistrohu Tani
-          </Link>
+          </button>
         </div>
       </nav>
 
@@ -56,8 +68,8 @@ function Students() {
               Merrni njohuritë më të reja akademike përmes platformës sonë. 
             </p>
             <div className="search-container">
-              <input type="text" placeholder="Kërko..." className="search-input" />
-              <button className="search-btn">Search</button>
+              <input type="text" placeholder="Kërko kursin tuaj..." className="search-input" />
+              <button className="search-btn" style={{ backgroundColor: '#d32f2f' }}>Search</button>
             </div>
           </div>
           <div className="hero-visual">
@@ -66,28 +78,14 @@ function Students() {
         </div>
       </div>
 
-      {/* LISTA E STUDENTËVE */}
-      <div className="content-area">
+      <div className="features-area" style={{ padding: '60px 0', textAlign: 'center', backgroundColor: '#fff' }}>
         <div className="inner-container">
-            <div className="list-wrapper">
-                <h2 className="list-title">Studentët e Regjistruar</h2>
-                <div className="student-list">
-                {students.length > 0 ? (
-                    students.map(s => (
-                    <div key={s.id} className="students-item">
-                        <p><strong>ID:</strong> {s.numri_studentit}</p>
-                        <p><strong>Programi:</strong> {s.programi}</p>
-                        <p><strong>Viti:</strong> {s.viti_studimit}</p>
-                    </div>
-                    ))
-                ) : (
-                    <p>Nuk ka studentë të regjistruar.</p>
-                )}
-                </div>
-            </div>
+          <h2 style={{ fontSize: '2rem', marginBottom: '20px', color: '#333' }}>Pse të zgjidhni STUDENTIX?</h2>
+          <p style={{ color: '#666' }}>Platforma lider për menaxhimin dhe edukimin e studentëve në kohë reale.</p>
         </div>
       </div>
     </div>
   );
 }
+
 export default Students;
