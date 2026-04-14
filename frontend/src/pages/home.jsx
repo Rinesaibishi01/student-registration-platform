@@ -34,7 +34,6 @@ function Students() {
           <ul className="nav-menu">
             <li>Ballina</li>
             <li>Kurset</li>
-            <li><Link to="/dashboard">Studentët</Link></li>
             <li>Kontakt</li>
           </ul>
           
