@@ -4,20 +4,17 @@ import DashboardStudents from "./pages/Dashboard/Students";
 import EditStudent from "./pages/Dashboard/EditStudent";
 import StudentDashboard from "./pages/Dashboard/StudentDashboard"; 
 import DashboardTeachers from "./pages/Dashboard/DashboardTeachers";
-
-<Route path="/teachers" element={<DashboardTeachers />} />
+// Importojmë faqen e re që krijuam për adminin
+import DashboardAdmin from "./pages/Dashboard/Dashboard-admin"; 
 
 const ProtectedRoute = ({ children, allowedRole }) => {
   const userRole = localStorage.getItem("role"); 
 
-  // Nëse nuk ka rol, kthehu në ballinë
   if (!userRole) {
     return <Navigate to="/" />; 
   }
 
-  // Kontrolli pa pasur parasysh shkronjat e mëdha/vogla
   if (userRole.toLowerCase() !== allowedRole.toLowerCase()) {
-    console.warn("Roli nuk përputhet:", userRole, "vs", allowedRole);
     return <Navigate to="/" />; 
   }
 
@@ -28,10 +25,27 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Rrugët publike */}
+        {/* 1. FAQJA PUBLIKE */}
         <Route path="/" element={<Home />} />
 
-        {/* Rrugët për ADMIN - E rregulluar në /dashboard/students */}
+        {/* 2. RRUGËT PËR ADMIN */}
+        
+        {/* Tani /Dashboard-admin është faqja kryesore ku do të dërgohet admini sapo të kyçet */}
+        <Route 
+          path="/Dashboard-admin" 
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <DashboardAdmin />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Rruga e vjetër /dashboard tani të dërgon automatikisht te faqja e re moderne */}
+        <Route 
+          path="/dashboard" 
+          element={<Navigate to="/Dashboard-admin" />} 
+        />
+
         <Route 
           path="/dashboard/students" 
           element={
@@ -42,6 +56,16 @@ function App() {
         />
         
         <Route 
+          path="/dashboard/teachers" 
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <DashboardTeachers />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Rruga për editim */}
+        <Route 
           path="/edit/:id" 
           element={
             <ProtectedRoute allowedRole="admin">
@@ -50,7 +74,7 @@ function App() {
           } 
         />
 
-        {/* Rrugët për STUDENTË */}
+        {/* 3. RRUGËT PËR STUDENTË */}
         <Route 
           path="/student-panel" 
           element={
@@ -59,6 +83,9 @@ function App() {
             </ProtectedRoute>
           } 
         />
+
+        {/* Catch-all: Nëse shkruhet diçka gabim, kthehu në Home */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
   );

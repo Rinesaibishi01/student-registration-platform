@@ -15,53 +15,56 @@ function AuthModal({ isOpen, onClose }) {
   });
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const url = isLogin ? 'http://localhost:5000/login' : 'http://localhost:5000/register';
-    const res = await axios.post(url, formData);
+    e.preventDefault();
+    try {
+      const url = isLogin ? 'http://localhost:5000/login' : 'http://localhost:5000/register';
+      const res = await axios.post(url, formData);
 
-    if (res.data.Status === "Success") {
-      // 1. Ruajmë rolin saktësisht siç vjen nga DB
-      localStorage.setItem("role", res.data.role);
-      localStorage.setItem("userName", res.data.name);
-      
-      onClose();
+      if (res.data.Status === "Success") {
+        // --- NDRYSHIMET KRYESORE KËTU ---
+        
+        // 1. Ruajmë Token-in e gjeneruar nga jsonwebtoken (shumë i rëndësishëm)
+        if (res.data.token) {
+          localStorage.setItem("token", res.data.token);
+        }
+        
+        // 2. Ruajmë të dhënat e tjera si më parë
+        localStorage.setItem("role", res.data.role);
+        localStorage.setItem("userName", res.data.name);
+        
+        onClose();
 
-      // 2. NAVIGIMI I KONTROLLUAR
-      // Nëse roli është 'admin', dërgoje te faqja e adminit
-      if (res.data.role === 'admin') {
-        navigate("/dashboard/students");
-      } 
-      // Nëse roli është 'student', dërgoje te paneli i studentit
-      else if (res.data.role === 'student') {
-        navigate("/student-panel"); 
+        // 3. NAVIGIMI I KONTROLLUAR
+        if (res.data.role === 'admin') {
+          navigate("/Dashboard-admin");
+        } else if (res.data.role === 'student') {
+          navigate("/student-panel"); 
+        } else {
+          navigate("/");
+        }
+
+        Swal.fire({
+          title: `Mirësevini ${res.data.name}!`,
+          text: isLogin ? 'U kyçët me sukses' : 'Llogaria u krijua me sukses',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } else {
+        Swal.fire('Gabim!', res.data.Message, 'error');
       }
-      // Nëse nuk është asnjëra, dërgoje në Home
-      else {
-        navigate("/");
-      }
-
-      Swal.fire({
-        title: `Mirësevini ${res.data.name}!`,
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false
-      });
-    } else {
-      Swal.fire('Gabim!', res.data.Message, 'error');
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Gabim!', 'Serveri nuk po përgjigjet ose email-i ekziston.', 'error');
     }
-  } catch (err) {
-    console.error(err);
-    Swal.fire('Gabim!', 'Serveri nuk po përgjigjet.', 'error');
-  }
-};
+  };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-slate-800">
       <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl relative p-10 border border-slate-100">
-        <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-red-600 text-2xl transition-all">✕</button>
+        <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-red-600 text-2xl transition-all bg-transparent border-none">✕</button>
         
         <h2 className="text-3xl font-black text-center mb-8 uppercase tracking-tighter">
           {isLogin ? "Kyçu në sistem" : "Regjistrohu si student"}
@@ -101,7 +104,7 @@ function AuthModal({ isOpen, onClose }) {
             onChange={e => setFormData({...formData, password: e.target.value})} 
           />
           
-          <button type="submit" className="w-full bg-red-600 text-white py-4 rounded-2xl font-black shadow-xl hover:bg-red-700 transition-all mt-4 uppercase">
+          <button type="submit" className="w-full bg-red-600 text-white py-4 rounded-2xl font-black shadow-xl hover:bg-red-700 transition-all mt-4 uppercase border-none cursor-pointer">
             {isLogin ? "Vazhdo" : "Krijo Llogarinë"}
           </button>
         </form>
