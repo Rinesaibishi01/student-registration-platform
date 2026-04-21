@@ -1,4 +1,4 @@
-* {
+/* * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -154,4 +154,4 @@ body {
     border-radius: 8px;
     border: 1px solid #eee;
     box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-}
+} 
