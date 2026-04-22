@@ -1,11 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
-import { Link, useLocation } from "react-router-dom";
+import Sidebar from "../../components/Sidebar";
 
 function DashboardStudents() {
-  const location = useLocation();
-  const isActive = (path) => location.pathname === path;
-
   const [students, setStudents] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [newStudent, setNewStudent] = useState({
@@ -14,141 +11,118 @@ function DashboardStudents() {
     viti_studimit: ""
   });
 
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
-  const fetchStudents = () => {
+  // 1. Marrja e të dhënave nga Backend
+  const fetchStudents = useCallback(() => {
     axios.get("http://localhost:5000/students")
       .then(res => {
-        if (Array.isArray(res.data)) setStudents(res.data);
+        if (Array.isArray(res.data)) {
+          setStudents(res.data);
+        }
       })
-      .catch(err => console.log(err));
-  };
+      .catch(err => console.error("Gabim gjatë marrjes së studentëve:", err));
+  }, []);
 
+  useEffect(() => {
+    fetchStudents();
+  }, [fetchStudents]);
+
+  // 2. Fshirja e Studentit
   const handleDelete = (id) => {
-    if (window.confirm("A jeni i sigurt?")) {
-axios.delete(`http://localhost:5000/delete-student/${id}`)
+    if (window.confirm("A jeni i sigurt që dëshironi ta fshini këtë student?")) {
+      axios.delete(`http://localhost:5000/delete-student/${id}`)
         .then(() => {
-          setStudents(students.filter(s => s.id !== id));
+          setStudents(prev => prev.filter(s => s.id !== id));
         })
-        .catch(err => console.log(err));
+        .catch(err => console.error("Gabim gjatë fshirjes:", err));
     }
   };
 
+  // 3. Shtimi i Studentit të Ri
   const handleAddStudent = (e) => {
     e.preventDefault();
     axios.post("http://localhost:5000/add-student", newStudent)
       .then(() => {
         setShowModal(false);
-        fetchStudents();
+        fetchStudents(); 
+        // Pastrojmë formën
         setNewStudent({ numri_studentit: "", programi: "", viti_studimit: "" });
       })
-      .catch(err => console.log(err));
+      .catch(err => console.error("Gabim gjatë shtimit:", err));
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#F9FAFB", fontFamily: "Inter, sans-serif" }}>
+    <div className="flex min-h-screen bg-gray-50 font-sans text-gray-900">
       
-      {/* SIDEBAR */}
-      <aside style={{
-        width: "240px",
-        background: "#111827",
-        color: "white",
-        padding: "20px",
-        display: "flex",
-        flexDirection: "column"
-      }}>
-        <h2 style={{ marginBottom: "30px", fontWeight: "bold" }}>Akademi</h2>
+      {/* Sidebar-i yt Universal */}
+      <Sidebar />
 
-      <Link 
-  to="/dashboard-admin"  
-  style={isActive("/dashboard-admin") ? activeLink : linkStyle} // <--- DHE KËTË
->
-  🏠 Dashboard
-</Link>
-
-        <Link to="/dashboard/students" style={isActive("/dashboard/students") ? activeLink : linkStyle}>
-          👨‍🎓 Studentët
-        </Link>
-
-                <Link to="#" style={linkStyle}>
-                  📘 Kurset
-                </Link>
-
-        <button
-          onClick={() => { localStorage.clear(); window.location.href = "/"; }}
-          style={logoutBtn}
-        >
-          ⏻ Dalja
-        </button>
-      </aside>
-
-      {/* MAIN */}
-      <main style={{ flex: 1, padding: "30px", overflowY: "auto" }}>
+      {/* Pjesa Kryesore - ml-64 është kritik këtu */}
+      <main className="flex-1 p-8 ml-64">
         
-        {/* HEADER */}
-        <div style={{ marginBottom: "30px" }}>
-          <h1 style={{ margin: 0 }}>Studentët</h1>
-          <p style={{ color: "#6B7280" }}>Menaxhimi i studentëve</p>
+        {/* Header-i i Faqes */}
+        <div className="flex justify-between items-end mb-10">
+          <div>
+            <h1 className="text-4xl font-extrabold text-gray-800 tracking-tight">Studentët</h1>
+            <p className="text-gray-500 mt-1">Menaxhimi i regjistrimeve dhe të dhënave akademike.</p>
+          </div>
+          <button 
+            onClick={() => setShowModal(true)} 
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-1"
+          >
+            + Shto Student
+          </button>
         </div>
 
-        {/* STATS */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "20px",
-          marginBottom: "30px"
-        }}>
-          <div style={cardStyle}>
-            <p style={{ color: "#9CA3AF" }}>Total Studentë</p>
-            <h2>{students.length}</h2>
+        {/* Statistikat e Vogla */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-1">Total Studentë</p>
+            <h2 className="text-3xl font-bold">{students.length}</h2>
           </div>
 
-          <div style={cardStyle}>
-            <p style={{ color: "#9CA3AF" }}>Programe</p>
-            <h2>{[...new Set(students.map(s => s.programi))].length}</h2>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-1">Programe Studimore</p>
+            <h2 className="text-3xl font-bold">
+              {[...new Set(students.map(s => s.programi))].length}
+            </h2>
           </div>
         </div>
 
-        {/* TABLE */}
-        <div style={cardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px" }}>
-            <h3>Lista e Studentëve</h3>
-            <button onClick={() => setShowModal(true)} style={addBtn}>
-              + Shto Student
-            </button>
-          </div>
-
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
+        {/* Tabela e Studentëve */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th style={th}>ID</th>
-                <th style={th}>Nr</th>
-                <th style={th}>Programi</th>
-                <th style={th}>Viti</th>
-                <th style={th}>Veprime</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase">ID</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase">Nr. ID</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase">Programi</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase">Viti</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase text-center">Veprime</th>
               </tr>
             </thead>
-
-            <tbody>
+            <tbody className="divide-y divide-gray-50">
               {students.length > 0 ? (
                 students.map(s => (
-                  <tr key={s.id}>
-                    <td style={td}>{s.id}</td>
-                    <td style={td}>{s.numri_studentit}</td>
-                    <td style={td}>{s.programi}</td>
-                    <td style={td}>{s.viti_studimit}</td>
-                    <td style={td}>
-                      <button style={editBtn}>Edit</button>
-                      <button onClick={() => handleDelete(s.id)} style={deleteBtn}>Delete</button>
+                  <tr key={s.id} className="hover:bg-indigo-50/30 transition-colors">
+                    <td className="py-4 px-6 text-sm text-gray-500">#{s.id}</td>
+                    <td className="py-4 px-6 text-sm font-bold text-indigo-600">{s.numri_studentit}</td>
+                    <td className="py-4 px-6 text-sm text-gray-700">{s.programi}</td>
+                    <td className="py-4 px-6 text-sm text-gray-700">Viti {s.viti_studimit}</td>
+                    <td className="py-4 px-6 text-center">
+                      <button className="text-gray-400 hover:text-indigo-600 mr-4 transition-colors font-semibold text-sm">Edit</button>
+                      <button 
+                        onClick={() => handleDelete(s.id)} 
+                        className="text-gray-400 hover:text-red-600 transition-colors font-semibold text-sm"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: "center", padding: "20px", color: "#9CA3AF" }}>
-                    Nuk ka studentë
+                  <td colSpan="5" className="py-20 text-center text-gray-400 font-medium italic">
+                    Nuk u gjet asnjë student në sistem.
                   </td>
                 </tr>
               )}
@@ -157,24 +131,54 @@ axios.delete(`http://localhost:5000/delete-student/${id}`)
         </div>
       </main>
 
-      {/* MODAL */}
+      {/* Modal - Shto Student */}
       {showModal && (
-        <div style={modalBg}>
-          <div style={modalBox}>
-            <h2>Shto Student</h2>
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-800">Shto Student të Ri</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
+            </div>
 
-            <form onSubmit={handleAddStudent}>
-              <input style={input} placeholder="Nr Studenti"
-                onChange={e => setNewStudent({...newStudent, numri_studentit: e.target.value})}
-              />
-              <input style={input} placeholder="Programi"
-                onChange={e => setNewStudent({...newStudent, programi: e.target.value})}
-              />
-              <input style={input} type="number" placeholder="Viti"
-                onChange={e => setNewStudent({...newStudent, viti_studimit: e.target.value})}
-              />
+            <form onSubmit={handleAddStudent} className="space-y-6">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Nr. i ID së Studentit</label>
+                <input 
+                  required
+                  value={newStudent.numri_studentit}
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
+                  placeholder="Psh: 200101001"
+                  onChange={e => setNewStudent({...newStudent, numri_studentit: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Programi Studimor</label>
+                <input 
+                  required
+                  value={newStudent.programi}
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
+                  placeholder="Psh: Shkenca Kompjuterike"
+                  onChange={e => setNewStudent({...newStudent, programi: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Viti i Studimeve</label>
+                <input 
+                  required
+                  type="number"
+                  value={newStudent.viti_studimit}
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
+                  placeholder="Psh: 1"
+                  onChange={e => setNewStudent({...newStudent, viti_studimit: e.target.value})}
+                />
+              </div>
 
-              <button style={saveBtn}>Ruaj</button>
+              <button 
+                type="submit" 
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-black shadow-lg shadow-indigo-100 transition-all mt-4 uppercase tracking-widest"
+              >
+                Ruaj në Databazë
+              </button>
             </form>
           </div>
         </div>
@@ -182,89 +186,5 @@ axios.delete(`http://localhost:5000/delete-student/${id}`)
     </div>
   );
 }
-
-/* STYLES */
-const linkStyle = {
-  padding: "10px",
-  borderRadius: "8px",
-  color: "#9CA3AF",
-  textDecoration: "none",
-  marginBottom: "10px",
-  display: "block"
-};
-
-const activeLink = {
-  ...linkStyle,
-  background: "#4F46E5",
-  color: "white",
-  fontWeight: "bold"
-};
-
-const cardStyle = {
-  background: "white",
-  padding: "20px",
-  borderRadius: "12px",
-  border: "1px solid #E5E7EB"
-};
-
-const logoutBtn = {
-  marginTop: "auto",
-  padding: "10px",
-  background: "#EF4444",
-  border: "none",
-  borderRadius: "8px",
-  color: "white",
-  cursor: "pointer"
-};
-
-const addBtn = {
-  background: "#4F46E5",
-  color: "white",
-  padding: "10px 15px",
-  border: "none",
-  borderRadius: "8px"
-};
-
-const th = { padding: "10px", textAlign: "left" };
-const td = { padding: "10px" };
-
-const editBtn = { marginRight: "10px" };
-const deleteBtn = { color: "red" };
-
-const modalBg = {
-  position: "fixed",
-  top: 0,
-  left: 0,
-  width: "100%",
-  height: "100%",
-  background: "rgba(0,0,0,0.5)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center"
-};
-
-const modalBox = {
-  background: "white",
-  padding: "20px",
-  borderRadius: "10px",
-  width: "300px"
-};
-
-const input = {
-  width: "100%",
-  padding: "10px",
-  marginBottom: "10px",
-  borderRadius: "6px",
-  border: "1px solid #E5E7EB"
-};
-
-const saveBtn = {
-  background: "#4F46E5",
-  color: "white",
-  padding: "10px",
-  border: "none",
-  borderRadius: "6px",
-  width: "100%"
-};
 
 export default DashboardStudents;

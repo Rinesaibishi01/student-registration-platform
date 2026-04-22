@@ -1,118 +1,101 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import Sidebar from "../../components/Sidebar"; // Importojmë Sidebar-in universal
 
 function DashboardTeachers() {
   return (
-    <div className="flex min-h-screen bg-gray-200 font-sans">
+    <div className="flex min-h-screen bg-gray-100 font-sans">
 
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-indigo-600 text-white flex flex-col justify-between rounded-r-3xl shadow-xl">
+      {/* 1. SIDEBAR UNIVERSAL - Ky do të zëvendësojë <aside> e vjetër */}
+      <Sidebar />
 
-        <div>
-          <div className="p-6 flex items-center gap-3">
-            <div className="w-10 h-10 bg-white text-indigo-600 rounded-xl flex items-center justify-center font-bold text-lg">
-              A
-            </div>
-            <span className="text-lg font-bold">Akademi</span>
-          </div>
+      {/* 2. MAIN CONTENT - Shtojmë ml-64 që të përputhet me sidebar-in fixed */}
+      <main className="flex-1 p-8 ml-64">
 
-          <nav className="mt-6 px-3 space-y-2">
-
-            <Link to="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500">
-              🏠 Dashboard
-            </Link>
-
-            <Link to="/teachers" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white text-indigo-600 font-semibold shadow">
-              👨‍🏫 Teachers
-            </Link>
-
-            <Link to="#" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500">
-              📚 Kurset
-            </Link>
-
-            <Link to="#" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500">
-              📢 Njoftimet
-            </Link>
-
-          </nav>
-        </div>
-
-        <div className="p-4">
-          <button className="w-full bg-white text-indigo-600 py-2 rounded-xl font-semibold">
-            Visit site ↗
-          </button>
-        </div>
-
-      </aside>
-
-      {/* MAIN */}
-      <main className="flex-1 p-6">
-
-        <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
+        <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
 
           {/* HEADER */}
-          <div className="flex justify-between items-center p-6 border-b">
-            <h2 className="text-xl font-bold text-gray-800">
-              Add New Teacher
-            </h2>
+          <div className="flex justify-between items-center p-8 border-b border-gray-50 bg-gray-50/50">
+            <div>
+              <h2 className="text-2xl font-black text-gray-800">
+                Shto Profesor të Ri
+              </h2>
+              <p className="text-sm text-gray-500">Plotësoni të dhënat profesionale të stafit akademik.</p>
+            </div>
 
             <div className="flex items-center gap-4">
-              <button className="p-2 rounded-full bg-gray-100">🔔</button>
-              <div className="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold">
+              <button className="p-3 rounded-2xl bg-white shadow-sm border border-gray-100 hover:bg-gray-50 transition-all">🔔</button>
+              <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center font-black shadow-lg shadow-indigo-200">
                 A
               </div>
             </div>
           </div>
 
           {/* FORM */}
-          <div className="p-6">
+          <div className="p-8">
 
-            <h3 className="text-white bg-indigo-600 px-4 py-2 rounded-lg mb-6 font-semibold">
-              Personal Details
-            </h3>
-
-            <div className="grid grid-cols-2 gap-6 mb-6">
-
-              <input placeholder="First Name" className="border p-3 rounded-lg" />
-              <input placeholder="Last Name" className="border p-3 rounded-lg" />
-
-              <input placeholder="Email" className="border p-3 rounded-lg" />
-              <input placeholder="Phone" className="border p-3 rounded-lg" />
-
-              <textarea placeholder="Address" className="border p-3 rounded-lg col-span-2"></textarea>
-
-              <input type="date" className="border p-3 rounded-lg" />
-              <input placeholder="Place of Birth" className="border p-3 rounded-lg" />
-
+            {/* SEKSIONI 1: TË DHËNAT PERSONALE */}
+            <div className="flex items-center gap-2 mb-6">
+               <span className="bg-indigo-600 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">01</span>
+               <h3 className="text-lg font-bold text-gray-700">Të dhënat Personale</h3>
             </div>
 
-            <h3 className="text-white bg-indigo-600 px-4 py-2 rounded-lg mb-6 font-semibold">
-              Education
-            </h3>
+            <div className="grid grid-cols-2 gap-6 mb-10">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase ml-1">Emri</label>
+                <input placeholder="Psh: Filan" className="w-full border-gray-200 border p-4 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase ml-1">Mbiemri</label>
+                <input placeholder="Psh: Fisteku" className="w-full border-gray-200 border p-4 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+              </div>
 
-            <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase ml-1">Email Adresa</label>
+                <input placeholder="profesori@uni-akademi.com" className="w-full border-gray-200 border p-4 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+              </div>
 
-              <input placeholder="University" className="border p-3 rounded-lg" />
-              <input placeholder="Degree" className="border p-3 rounded-lg" />
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase ml-1">Numri i Telefonit</label>
+                <input placeholder="+383 4X XXX XXX" className="w-full border-gray-200 border p-4 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+              </div>
 
-              <input type="date" className="border p-3 rounded-lg" />
-              <input placeholder="City" className="border p-3 rounded-lg" />
-
+              <div className="col-span-2 space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase ml-1">Adresa e Banimit</label>
+                <textarea placeholder="Rruga, Qyteti, Kodi Postar" className="w-full border-gray-200 border p-4 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition-all" rows="2"></textarea>
+              </div>
             </div>
 
-            <div className="flex justify-end gap-4">
-              <button className="px-6 py-2 rounded-xl border font-semibold">
-                Save as Draft
+            {/* SEKSIONI 2: EDUKIMI */}
+            <div className="flex items-center gap-2 mb-6">
+               <span className="bg-indigo-600 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">02</span>
+               <h3 className="text-lg font-bold text-gray-700">Edukimi & Përvoja</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6 mb-10">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase ml-1">Universiteti</label>
+                <input placeholder="Universiteti i Prishtinës" className="w-full border-gray-200 border p-4 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase ml-1">Grada Shkencore</label>
+                <input placeholder="Psh: Master i Shkencave" className="w-full border-gray-200 border p-4 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+              </div>
+            </div>
+
+            {/* BUTTONS */}
+            <div className="flex justify-end gap-4 pt-6 border-t border-gray-50">
+              <button className="px-8 py-4 rounded-2xl border border-gray-200 font-bold text-gray-500 hover:bg-gray-50 transition-all">
+                Anulo
               </button>
-              <button className="px-6 py-2 rounded-xl bg-indigo-600 text-white font-semibold">
-                Submit
+              <button className="px-8 py-4 rounded-2xl bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transform hover:-translate-y-1 transition-all">
+                Regjistro Profesorin
               </button>
             </div>
 
           </div>
-
         </div>
-
       </main>
     </div>
   );
