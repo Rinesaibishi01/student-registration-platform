@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import Sidebar from "../../components/Sidebar";
 
+import Swal from 'sweetalert2';
+
 function DashboardStudents() {
   const [students, setStudents] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -11,15 +13,16 @@ function DashboardStudents() {
     viti_studimit: ""
   });
 
-  // 1. Marrja e të dhënave nga Backend
-  const fetchStudents = useCallback(() => {
-    axios.get("http://localhost:5000/students")
-      .then(res => {
-        if (Array.isArray(res.data)) {
-          setStudents(res.data);
-        }
-      })
-      .catch(err => console.error("Gabim gjatë marrjes së studentëve:", err));
+  // 1. Marrja e të dhënave nga Backend (E deklaruar para përdorimit)
+  const fetchStudents = useCallback(async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/students");
+      if (Array.isArray(res.data)) {
+        setStudents(res.data);
+      }
+    } catch (err) {
+      console.error("Gabim gjatë marrjes së studentëve:", err);
+    }
   }, []);
 
   useEffect(() => {
@@ -27,39 +30,54 @@ function DashboardStudents() {
   }, [fetchStudents]);
 
   // 2. Fshirja e Studentit
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("A jeni i sigurt që dëshironi ta fshini këtë student?")) {
-      axios.delete(`http://localhost:5000/delete-student/${id}`)
-        .then(() => {
-          setStudents(prev => prev.filter(s => s.id !== id));
-        })
-        .catch(err => console.error("Gabim gjatë fshirjes:", err));
+      try {
+        await axios.delete(`http://localhost:5000/delete-student/${id}`);
+        setStudents(prev => prev.filter(s => s.id !== id));
+      } catch (err) {
+        console.error("Gabim gjatë fshirjes:", err);
+        alert("Ndodhi një gabim gjatë fshirjes.");
+      }
     }
   };
 
   // 3. Shtimi i Studentit të Ri
-  const handleAddStudent = (e) => {
+  const handleAddStudent = async (e) => {
     e.preventDefault();
-    axios.post("http://localhost:5000/add-student", newStudent)
-      .then(() => {
-        setShowModal(false);
-        fetchStudents(); 
-        // Pastrojmë formën
-        setNewStudent({ numri_studentit: "", programi: "", viti_studimit: "" });
-      })
-      .catch(err => console.error("Gabim gjatë shtimit:", err));
-  };
+    try {
+        const res = await axios.post("http://localhost:5000/add-student", newStudent);
+        
+        if (res.data.Status === "Success") {
+            // 2. Zëvendëso alert-in me këtë bllok profesional
+            Swal.fire({
+                title: 'Sukses!',
+                text: 'Studenti u regjistrua me sukses në sistem.',
+                icon: 'success',
+                confirmButtonColor: '#4e73df', // Ngjyra e butonit tënd primar
+                timer: 3000 // Mbyllet vetë pas 3 sekondave
+            });
+
+            setShowModal(false);
+            fetchStudents(); // Rifreskon tabelën
+        }
+    } catch (err) {
+        // Mesazh profesional edhe për gabimet
+        Swal.fire({
+            title: 'Gabim!',
+            text: 'Ndodhi një problem gjatë ruajtjes. Te lutem provo sërish.',
+            icon: 'error',
+            confirmButtonColor: '#e74a3b'
+        });
+    }
+};
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans text-gray-900">
-      
-      {/* Sidebar-i yt Universal */}
       <Sidebar />
 
-      {/* Pjesa Kryesore - ml-64 është kritik këtu */}
       <main className="flex-1 p-8 ml-64">
-        
-        {/* Header-i i Faqes */}
+        {/* Header-i */}
         <div className="flex justify-between items-end mb-10">
           <div>
             <h1 className="text-4xl font-extrabold text-gray-800 tracking-tight">Studentët</h1>
@@ -73,7 +91,7 @@ function DashboardStudents() {
           </button>
         </div>
 
-        {/* Statistikat e Vogla */}
+        {/* Kartat e Statistikave */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-1">Total Studentë</p>
@@ -88,7 +106,7 @@ function DashboardStudents() {
           </div>
         </div>
 
-        {/* Tabela e Studentëve */}
+        {/* Tabela */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <table className="w-full text-left">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -131,7 +149,7 @@ function DashboardStudents() {
         </div>
       </main>
 
-      {/* Modal - Shto Student */}
+      {/* Modal-i me inpute të lidhura */}
       {showModal && (
         <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
           <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
@@ -146,9 +164,9 @@ function DashboardStudents() {
                 <input 
                   required
                   value={newStudent.numri_studentit}
+                  onChange={e => setNewStudent({...newStudent, numri_studentit: e.target.value})}
                   className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
                   placeholder="Psh: 200101001"
-                  onChange={e => setNewStudent({...newStudent, numri_studentit: e.target.value})}
                 />
               </div>
               <div>
@@ -156,9 +174,9 @@ function DashboardStudents() {
                 <input 
                   required
                   value={newStudent.programi}
+                  onChange={e => setNewStudent({...newStudent, programi: e.target.value})}
                   className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
                   placeholder="Psh: Shkenca Kompjuterike"
-                  onChange={e => setNewStudent({...newStudent, programi: e.target.value})}
                 />
               </div>
               <div>
@@ -167,9 +185,9 @@ function DashboardStudents() {
                   required
                   type="number"
                   value={newStudent.viti_studimit}
+                  onChange={e => setNewStudent({...newStudent, viti_studimit: e.target.value})}
                   className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
                   placeholder="Psh: 1"
-                  onChange={e => setNewStudent({...newStudent, viti_studimit: e.target.value})}
                 />
               </div>
 

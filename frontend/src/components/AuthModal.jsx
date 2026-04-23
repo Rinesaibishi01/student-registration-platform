@@ -62,7 +62,7 @@ function AuthModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-slate-800">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-slate-800">
       <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl relative p-10 border border-slate-100">
         <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-red-600 text-2xl transition-all bg-transparent border-none">✕</button>
         
