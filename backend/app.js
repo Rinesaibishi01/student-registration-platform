@@ -38,36 +38,101 @@ app.post('/login', async (req, res) => {
     } catch (err) { return res.status(500).json({ Status: "Error", Message: err.message }); }
 });
 
-app.get('/students', async (req, res) => {
+app.get('/get-students', async (req, res) => {
     try {
         const result = await Student.findAll({
-            include: [{ model: User, attributes: ['firstname', 'lastname', 'email'] }],
+            // Join me tabelën User për të marrë emrin dhe mbiemrin
+            include: [{ 
+                model: User, 
+                attributes: ['firstname', 'lastname', 'email'] 
+            }],
             order: [['id', 'DESC']]
         });
         res.json(result);
-    } catch (err) { res.status(500).json({ Status: "Error", Message: err.message }); }
+    } catch (err) { 
+        res.status(500).json({ Status: "Error", Message: err.message }); 
+    }
 });
 
 app.delete('/delete-student/:id', async (req, res) => {
     try {
-        await Student.destroy({ where: { id: req.params.id } });
+        const { id } = req.params;
+        
+        // 1. Gjejmë studentin për të marrë user_id-në e lidhur
+        const student = await Student.findByPk(id);
+        
+        if (!student) {
+            return res.status(404).json({ Status: "Error", Message: "Studenti nuk u gjet" });
+        }
+
+        const userId = student.user_id;
+
+        // 2. Fshijmë studentin (tabela students)
+        await student.destroy();
+
+        // 3. Fshijmë përdoruesin (tabela users)
+        await User.destroy({ where: { id: userId } });
+
         return res.json({ Status: "Success" });
-    } catch (err) { return res.status(500).json({ Status: "Error", Message: err.message }); }
+    } catch (err) { 
+        console.error("Gabim gjatë fshirjes:", err);
+        return res.status(500).json({ Status: "Error", Message: err.message }); 
+    }
+});
+app.put('/update-student/:id', async (req, res) => {
+    const { id } = req.params;
+    const { emri, mbiemri, email, numri_studentit, programi, viti_studimit } = req.body;
+
+    try {
+        // Gjejmë studentin për të marrë user_id-në
+        const student = await Student.findByPk(id);
+        
+        if (student) {
+            // Përditësojmë User-in
+            await User.update(
+                { firstname: emri, lastname: mbiemri, email: email },
+                { where: { id: student.user_id } }
+            );
+
+            // Përditësojmë Studentin
+            await student.update({ numri_studentit, programi, viti_studimit });
+
+            res.json({ Status: "Success" });
+        } else {
+            res.status(404).json({ Message: "Studenti nuk u gjet" });
+        }
+    } catch (err) {
+        res.status(500).json({ Message: err.message });
+    }
 });
 
+//
 app.post('/add-student', async (req, res) => {
     try {
-        const { numri_studentit, programi, viti_studimit } = req.body;
+        // Marrim të gjitha fushat që dërgon Frontend-i
+        const { emri, mbiemri, email, numri_studentit, programi, viti_studimit } = req.body;
+
+        // 1. Krijohet User-i me të dhënat reale
         const newUser = await User.create({
-            firstname: "Student",
-            lastname: "I Ri",
-            email: `student_${numri_studentit}_${Date.now()}@uni.com`,
+            firstname: emri,
+            lastname: mbiemri,
+            email: email,
             password: 'student123',
             role: 'student'
         });
-        await Student.create({ user_id: newUser.id, numri_studentit, programi, viti_studimit: viti_studimit || 1 });
+
+        // 2. Lidhet me tabelën Student
+        await Student.create({ 
+            user_id: newUser.id, 
+            numri_studentit, 
+            programi, 
+            viti_studimit: viti_studimit || 1 
+        });
+
         res.json({ Status: "Success" });
-    } catch (err) { res.status(500).json({ Status: "Error", Message: err.message }); }
+    } catch (err) { 
+        res.status(500).json({ Status: "Error", Message: err.message }); 
+    }
 });
 
 // 2. NDRYSHIMI: RRUGA E RREGULLUAR PËR PROFESORËT

@@ -1,202 +1,167 @@
 import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import Sidebar from "../../components/Sidebar";
-
 import Swal from 'sweetalert2';
 
-function DashboardStudents() {
+function Student() {
   const [students, setStudents] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [newStudent, setNewStudent] = useState({
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState(null);
+
+  const [studentData, setStudentData] = useState({
+    emri: "",
+    mbiemri: "",
+    email: "",
     numri_studentit: "",
     programi: "",
     viti_studimit: ""
   });
 
-  // 1. Marrja e të dhënave nga Backend (E deklaruar para përdorimit)
-  const fetchStudents = useCallback(async () => {
+// Rregullimi i funksionit fetchStudents
+  const fetchStudents = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/students");
-      if (Array.isArray(res.data)) {
-        setStudents(res.data);
-      }
-    } catch (err) {
-      console.error("Gabim gjatë marrjes së studentëve:", err);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchStudents();
-  }, [fetchStudents]);
-
-  // 2. Fshirja e Studentit
-  const handleDelete = async (id) => {
-    if (window.confirm("A jeni i sigurt që dëshironi ta fshini këtë student?")) {
-      try {
-        await axios.delete(`http://localhost:5000/delete-student/${id}`);
-        setStudents(prev => prev.filter(s => s.id !== id));
-      } catch (err) {
-        console.error("Gabim gjatë fshirjes:", err);
-        alert("Ndodhi një gabim gjatë fshirjes.");
-      }
+      const res = await axios.get("http://localhost:5000/get-students");
+      setStudents(res.data);
+    } catch (error) {
+      console.error("Gabim:", error.message);
     }
   };
 
-  // 3. Shtimi i Studentit të Ri
-  const handleAddStudent = async (e) => {
+  // Rregullimi i useEffect - kllapat tani janë saktë
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const handleChange = (e) => {
+    setStudentData({ ...studentData, [e.target.name]: e.target.value });
+  };
+
+  const handleEdit = (s) => {
+    setIsEditing(true);
+    setEditId(s.id);
+    setStudentData({
+      emri: s.User?.firstname || s.firstname || "",
+      mbiemri: s.User?.lastname || s.lastname || "",
+      email: s.User?.email || s.email || "",
+      numri_studentit: s.numri_studentit || "",
+      programi: s.programi || "",
+      viti_studimit: s.viti_studimit || ""
+    });
+    setShowModal(true);
+  };
+
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: 'A jeni i sigurt?',
+      text: "Studenti do të fshihet nga sistemi!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Po, fshije!'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          // Hequr 'const res =' që ESLint të mos ankohet
+          await axios.delete(`http://localhost:5000/delete-student/${id}`);
+          Swal.fire('Fshirë!', 'U fshi me sukses.', 'success');
+          fetchStudents();
+        } catch (error) {
+          console.error("Gabim gjatë fshirjes:", error.message);
+          Swal.fire('Gabim!', 'Problem gjatë fshirjes.', 'error');
+        }
+      }
+    });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-        const res = await axios.post("http://localhost:5000/add-student", newStudent);
-        
-        if (res.data.Status === "Success") {
-            // 2. Zëvendëso alert-in me këtë bllok profesional
-            Swal.fire({
-                title: 'Sukses!',
-                text: 'Studenti u regjistrua me sukses në sistem.',
-                icon: 'success',
-                confirmButtonColor: '#4e73df', // Ngjyra e butonit tënd primar
-                timer: 3000 // Mbyllet vetë pas 3 sekondave
-            });
+      let response; 
+      if (isEditing) {
+        response = await axios.put(`http://localhost:5000/update-student/${editId}`, studentData);
+      } else {
+        response = await axios.post("http://localhost:5000/add-student", studentData);
+      }
 
-            setShowModal(false);
-            fetchStudents(); // Rifreskon tabelën
-        }
-    } catch (err) {
-        // Mesazh profesional edhe për gabimet
-        Swal.fire({
-            title: 'Gabim!',
-            text: 'Ndodhi një problem gjatë ruajtjes. Te lutem provo sërish.',
-            icon: 'error',
-            confirmButtonColor: '#e74a3b'
-        });
+      if (response.data && response.data.Status === "Success") {
+        Swal.fire('Sukses!', 'Veprimi u krye me sukses!', 'success');
+        setShowModal(false);
+        setIsEditing(false);
+        setEditId(null);
+        setStudentData({ emri: "", mbiemri: "", email: "", numri_studentit: "", programi: "", viti_studimit: "" });
+        fetchStudents();
+      } else {
+        // Kapim gabimet e validimit nga Backend-i
+        Swal.fire('Gabim!', response.data.Message || 'Ndodhi një problem.', 'error');
+      }
+    } catch (error) {
+      console.error("Gabim në server:", error.response?.data || error.message);
+      Swal.fire('Gabim!', 'Problem në lidhjen me serverin.', 'error');
     }
-};
+  };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 font-sans text-gray-900">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-
       <main className="flex-1 p-8 ml-64">
-        {/* Header-i */}
-        <div className="flex justify-between items-end mb-10">
-          <div>
-            <h1 className="text-4xl font-extrabold text-gray-800 tracking-tight">Studentët</h1>
-            <p className="text-gray-500 mt-1">Menaxhimi i regjistrimeve dhe të dhënave akademike.</p>
-          </div>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Studentët</h1>
           <button 
-            onClick={() => setShowModal(true)} 
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-1"
+            onClick={() => { 
+              setIsEditing(false); 
+              setShowModal(true); 
+              setStudentData({emri:"", mbiemri:"", email:"", numri_studentit:"", programi:"", viti_studimit:""}); 
+            }} 
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold"
           >
             + Shto Student
           </button>
         </div>
 
-        {/* Kartat e Statistikave */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-1">Total Studentë</p>
-            <h2 className="text-3xl font-bold">{students.length}</h2>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <p className="text-xs text-gray-400 uppercase font-black tracking-widest mb-1">Programe Studimore</p>
-            <h2 className="text-3xl font-bold">
-              {[...new Set(students.map(s => s.programi))].length}
-            </h2>
-          </div>
-        </div>
-
-        {/* Tabela */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-xl shadow overflow-hidden">
           <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <thead className="bg-gray-50 border-b font-bold">
               <tr>
-                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase">ID</th>
-                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase">Nr. ID</th>
-                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase">Programi</th>
-                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase">Viti</th>
-                <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase text-center">Veprime</th>
+                <th className="p-4">Studenti</th>
+                <th className="p-4">Nr. ID</th>
+                <th className="p-4 text-center">Veprime</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
-              {students.length > 0 ? (
-                students.map(s => (
-                  <tr key={s.id} className="hover:bg-indigo-50/30 transition-colors">
-                    <td className="py-4 px-6 text-sm text-gray-500">#{s.id}</td>
-                    <td className="py-4 px-6 text-sm font-bold text-indigo-600">{s.numri_studentit}</td>
-                    <td className="py-4 px-6 text-sm text-gray-700">{s.programi}</td>
-                    <td className="py-4 px-6 text-sm text-gray-700">Viti {s.viti_studimit}</td>
-                    <td className="py-4 px-6 text-center">
-                      <button className="text-gray-400 hover:text-indigo-600 mr-4 transition-colors font-semibold text-sm">Edit</button>
-                      <button 
-                        onClick={() => handleDelete(s.id)} 
-                        className="text-gray-400 hover:text-red-600 transition-colors font-semibold text-sm"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="py-20 text-center text-gray-400 font-medium italic">
-                    Nuk u gjet asnjë student në sistem.
+            <tbody>
+              {students.map(s => (
+                <tr key={s.id} className="border-b hover:bg-gray-50">
+                  <td className="p-4">
+                    {s.User ? `${s.User.firstname} ${s.User.lastname}` : `${s.firstname} ${s.lastname}`}
+                  </td>
+                  <td className="p-4 text-indigo-600 font-bold">{s.numri_studentit}</td>
+                  <td className="p-4 text-center space-x-2">
+                    <button onClick={() => handleEdit(s)} className="text-blue-600 hover:underline">Edito</button>
+                    <button onClick={() => handleDelete(s.id)} className="text-red-600 hover:underline">Fshij</button>
                   </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>
       </main>
 
-      {/* Modal-i me inpute të lidhura */}
       {showModal && (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-800">Shto Student të Ri</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
-            </div>
-
-            <form onSubmit={handleAddStudent} className="space-y-6">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Nr. i ID së Studentit</label>
-                <input 
-                  required
-                  value={newStudent.numri_studentit}
-                  onChange={e => setNewStudent({...newStudent, numri_studentit: e.target.value})}
-                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
-                  placeholder="Psh: 200101001"
-                />
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-xl w-full max-w-md shadow-2xl">
+            <h2 className="text-xl font-bold mb-4">{isEditing ? "Edito" : "Shto"} Student</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                <input name="emri" value={studentData.emri} onChange={handleChange} placeholder="Emri" className="p-2 border rounded" required />
+                <input name="mbiemri" value={studentData.mbiemri} onChange={handleChange} placeholder="Mbiemri" className="p-2 border rounded" required />
               </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Programi Studimor</label>
-                <input 
-                  required
-                  value={newStudent.programi}
-                  onChange={e => setNewStudent({...newStudent, programi: e.target.value})}
-                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
-                  placeholder="Psh: Shkenca Kompjuterike"
-                />
+              <input name="email" type="email" value={studentData.email} onChange={handleChange} placeholder="Email" className="w-full p-2 border rounded" required />
+              <input name="numri_studentit" value={studentData.numri_studentit} onChange={handleChange} placeholder="Nr. i ID së Studentit" className="w-full p-2 border rounded" required />
+              <input name="programi" value={studentData.programi} onChange={handleChange} placeholder="Programi" className="w-full p-2 border rounded" required />
+              <input name="viti_studimit" type="number" value={studentData.viti_studimit} onChange={handleChange} placeholder="Viti i Studimit" className="w-full p-2 border rounded" required />
+              <div className="flex gap-2 pt-2">
+                <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded font-bold">Ruaj</button>
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 bg-gray-200 rounded font-bold">Anulo</button>
               </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Viti i Studimeve</label>
-                <input 
-                  required
-                  type="number"
-                  value={newStudent.viti_studimit}
-                  onChange={e => setNewStudent({...newStudent, viti_studimit: e.target.value})}
-                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
-                  placeholder="Psh: 1"
-                />
-              </div>
-
-              <button 
-                type="submit" 
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-black shadow-lg shadow-indigo-100 transition-all mt-4 uppercase tracking-widest"
-              >
-                Ruaj në Databazë
-              </button>
             </form>
           </div>
         </div>
@@ -205,4 +170,4 @@ function DashboardStudents() {
   );
 }
 
-export default DashboardStudents;
+export default Student;

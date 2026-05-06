@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Sidebar from "../../components/Sidebar";
 import Swal from 'sweetalert2';
 import axios from "axios";
@@ -12,18 +12,19 @@ function DashboardTeachers() {
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
 
-  const fetchTeachers = async () => {
+  // Përdorim useCallback që useEffect të mos ankohet
+  const fetchTeachers = useCallback(async () => {
     try {
       const res = await axios.get("http://localhost:5000/get-teachers");
       setTeachersList(res.data);
-    } catch (err) {
-      console.error("Gabim gjatë marrjes së profesorëve:", err);
+    } catch (error) {
+      console.error("Gabim gjatë marrjes së profesorëve:", error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchTeachers();
-  }, []);
+  }, [fetchTeachers]);
 
   const handleChange = (e) => {
     setTeacher({ ...teacher, [e.target.name]: e.target.value });
@@ -33,9 +34,9 @@ function DashboardTeachers() {
     setIsEditing(true);
     setEditId(t.id);
     setTeacher({
-      emri: t.firstname,
-      mbiemri: t.lastname,
-      email: t.email,
+      emri: t.firstname || "",
+      mbiemri: t.lastname || "",
+      email: t.email || "",
       telefoni: t.telefoni || "",
       adresa: t.adresa || "",
       universiteti: t.universiteti || "",
@@ -61,7 +62,8 @@ function DashboardTeachers() {
         setEditId(null);
         fetchTeachers();
       }
-    } catch (err) {
+    } catch (error) {
+      console.error(error); // Përdorim variablin 'error' që të mos kemi vija të kuqe
       Swal.fire('Gabim!', 'Ndodhi një problem në server.', 'error');
     }
   };
@@ -79,7 +81,8 @@ function DashboardTeachers() {
           await axios.delete(`http://localhost:5000/delete-teacher/${id}`);
           Swal.fire('Fshirë!', 'Profesori u fshi.', 'success');
           fetchTeachers();
-        } catch (err) {
+        } catch (error) {
+          console.error(error);
           Swal.fire('Gabim!', 'Problem gjatë fshirjes.', 'error');
         }
       }
@@ -98,15 +101,14 @@ function DashboardTeachers() {
           </div>
           <form onSubmit={handleSubmit} className="p-8">
             <div className="grid grid-cols-2 gap-6 mb-6">
-              <input name="emri" value={teacher.emri} onChange={handleChange} placeholder="Emri" className="border p-4 rounded-2xl w-full" required />
-              <input name="mbiemri" value={teacher.mbiemri} onChange={handleChange} placeholder="Mbiemri" className="border p-4 rounded-2xl w-full" required />
-              <input name="email" value={teacher.email} onChange={handleChange} placeholder="Email" type="email" className="border p-4 rounded-2xl w-full" required />
-              <input name="telefoni" value={teacher.telefoni} onChange={handleChange} placeholder="Telefoni" className="border p-4 rounded-2xl w-full" />
-              <input name="universiteti" value={teacher.universiteti} onChange={handleChange} placeholder="Universiteti" className="border p-4 rounded-2xl w-full" />
-              <input name="grada" value={teacher.grada} onChange={handleChange} placeholder="Grada (Departamenti)" className="border p-4 rounded-2xl w-full" />
-              {/* Kthejmë fushën e Adresës në kolona të plota */}
+              <input name="emri" value={teacher.emri} onChange={handleChange} placeholder="Emri" className="border p-4 rounded-2xl w-full outline-none focus:border-indigo-500" required />
+              <input name="mbiemri" value={teacher.mbiemri} onChange={handleChange} placeholder="Mbiemri" className="border p-4 rounded-2xl w-full outline-none focus:border-indigo-500" required />
+              <input name="email" value={teacher.email} onChange={handleChange} placeholder="Email" type="email" className="border p-4 rounded-2xl w-full outline-none focus:border-indigo-500" required />
+              <input name="telefoni" value={teacher.telefoni} onChange={handleChange} placeholder="Telefoni" className="border p-4 rounded-2xl w-full outline-none focus:border-indigo-500" />
+              <input name="universiteti" value={teacher.universiteti} onChange={handleChange} placeholder="Universiteti" className="border p-4 rounded-2xl w-full outline-none focus:border-indigo-500" />
+              <input name="grada" value={teacher.grada} onChange={handleChange} placeholder="Grada (Departamenti)" className="border p-4 rounded-2xl w-full outline-none focus:border-indigo-500" />
               <div className="col-span-2">
-                <textarea name="adresa" value={teacher.adresa} onChange={handleChange} placeholder="Adresa e Banimit" className="border p-4 rounded-2xl w-full" rows="2"></textarea>
+                <textarea name="adresa" value={teacher.adresa} onChange={handleChange} placeholder="Adresa e Banimit" className="border p-4 rounded-2xl w-full outline-none focus:border-indigo-500" rows="2"></textarea>
               </div>
             </div>
             <div className="flex gap-4">
@@ -114,7 +116,7 @@ function DashboardTeachers() {
                 {isEditing ? "Ruaj Ndryshimet" : "Regjistro Profesorin"}
               </button>
               {isEditing && (
-                <button type="button" onClick={() => { setIsEditing(false); setTeacher({emri:"", mbiemri:"", email:"", telefoni:"", adresa:"", universiteti:"", grada:""}); }} className="px-8 py-4 rounded-2xl bg-gray-200 font-bold hover:bg-gray-300">Anulo</button>
+                <button type="button" onClick={() => { setIsEditing(false); setTeacher({emri:"", mbiemri:"", email:"", telefoni:"", adresa:"", universiteti:"", grada:""}); }} className="px-8 py-4 rounded-2xl bg-gray-200 font-bold hover:bg-gray-300 transition-all">Anulo</button>
               )}
             </div>
           </form>
@@ -137,8 +139,8 @@ function DashboardTeachers() {
                     <td className="px-8 py-4 font-bold text-gray-700">{t.firstname} {t.lastname}</td>
                     <td className="px-8 py-4 text-gray-500">{t.departamenti || '---'}</td>
                     <td className="px-8 py-4 text-gray-500">{t.universiteti || '---'}</td>
-                    <td className="px-8 py-4 text-right space-x-4">
-                      <button onClick={() => handleEdit(t)} className="text-indigo-600 font-bold hover:text-indigo-900 transition-colors" style={{ marginRight: "10px" }}>Edito</button>
+                    <td className="px-8 py-4 text-right">
+                      <button onClick={() => handleEdit(t)} className="text-indigo-600 font-bold hover:text-indigo-900 transition-colors mr-4">Edito</button>
                       <button onClick={() => handleDelete(t.id)} className="text-red-600 font-bold hover:text-red-900 transition-colors">Fshij</button>
                     </td>
                   </tr>
