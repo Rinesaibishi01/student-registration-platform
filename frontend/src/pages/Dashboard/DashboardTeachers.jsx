@@ -22,10 +22,14 @@ function DashboardTeachers() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchTeachers();
+    useEffect(() => {
+    const getData = async () => {
+      await fetchTeachers();
+    };
+    getData();
   }, [fetchTeachers]);
 
+  
   const handleChange = (e) => {
     setTeacher({ ...teacher, [e.target.name]: e.target.value });
   };
