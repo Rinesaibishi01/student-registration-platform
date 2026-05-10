@@ -14,6 +14,7 @@ function AuthModal({ isOpen, onClose }) {
     password: ""
   });
 
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -58,6 +59,8 @@ function AuthModal({ isOpen, onClose }) {
       Swal.fire('Gabim!', 'Serveri nuk po përgjigjet ose email-i ekziston.', 'error');
     }
   };
+
+  
 
   if (!isOpen) return null;
 
@@ -119,9 +122,12 @@ function AuthModal({ isOpen, onClose }) {
             {isLogin ? "Regjistrohu" : "Kyçu"}
           </button>
         </p>
+        
       </div>
     </div>
+    
   );
 }
+
 
 export default AuthModal;
