@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../../components/Sidebar"; // Importojmë Sidebar-in universal
+import Sidebar from "../../components/Sidebar";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -9,115 +9,114 @@ function Dashboard() {
   const adminName = localStorage.getItem("userName") || "Admin";
 
   const stats = [
-    { title: "Studentë", count: "1,240", icon: "👨‍🎓" },
-    { title: "Kurse", count: "48", icon: "📘" },
-    { title: "Pagesa", count: "12", icon: "💰" },
-    { title: "Njoftime", count: "5", icon: "🔔" },
+    { title: "Studentë", count: "1,240", icon: "👨‍🎓", color: "bg-blue-50 text-blue-600" },
+    { title: "Kurse", count: "48", icon: "📘", color: "bg-indigo-50 text-indigo-600" },
+    { title: "Pagesa", count: "12", icon: "💰", color: "bg-emerald-50 text-emerald-600" },
+    { title: "Njoftime", count: "5", icon: "🔔", color: "bg-amber-50 text-amber-600" },
   ];
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#F9FAFB", fontFamily: "Inter, sans-serif" }}>
+    <div className="flex min-h-screen bg-[#F8FAFC] font-sans">
       
       {/* SIDEBAR UNIVERSAL */}
       <Sidebar />
 
-      {/* MAIN CONTENT - shtojmë marginLeft: "240px" ose "256px" (varet nga sidebar) */}
-      <main style={{ flex: 1, padding: "40px", marginLeft: "240px", overflowY: "auto" }}>
+      {/* MAIN CONTENT */}
+      <main className="flex-1 p-10 ml-[256px] overflow-y-auto">
         
-        {/* HEADER */}
-        <div style={{ marginBottom: "40px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {/* HEADER SECTION */}
+        <div className="mb-12 flex justify-between items-center">
           <div>
-            <h1 style={{ margin: 0, fontSize: "32px", fontWeight: "800", color: "#111827" }}>
-              Mirësevini prapë, {adminName}! 👋
+            <h5 className="text-blue-600 font-bold uppercase tracking-widest text-xs mb-2">Sistemi Uni-Akademi</h5>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+              Mirësevini prapë, <span className="text-blue-700">{adminName}!</span> 👋
             </h1>
-            <p style={{ color: "#6B7280", marginTop: "5px" }}>Kjo është gjendja aktuale e sistemit Uni-Akademi.</p>
+            <p className="text-slate-500 mt-2 font-medium">Kjo është gjendja aktuale e platformës për sot.</p>
           </div>
-          <div style={{ 
-            background: "white", 
-            padding: "10px 20px", 
-            borderRadius: "12px", 
-            fontWeight: "bold", 
-            border: "1px solid #E5E7EB",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
-          }}>
-            <span style={{ color: "#4F46E5" }}>●</span> Admin Panel
+          
+          <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-2xl shadow-sm border border-slate-100">
+            <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+            <span className="font-bold text-slate-700 text-sm">Paneli i Kontrollit</span>
           </div>
         </div>
 
         {/* STATS CARDS */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: "25px",
-          marginBottom: "40px"
-        }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           {stats.map((item, i) => (
-            <div key={i} style={cardStyle}>
-              <div style={{ 
-                fontSize: "30px", 
-                background: "#F3F4F6", 
-                width: "50px", 
-                height: "50px", 
-                display: "flex", 
-                alignItems: "center", 
-                justifyContent: "center", 
-                borderRadius: "12px",
-                marginBottom: "15px" 
-              }}>
+            <div key={i} className="bg-white p-8 rounded-[2rem] border border-slate-50 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer">
+              <div className={`${item.color} w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform`}>
                 {item.icon}
               </div>
-              <p style={{ color: "#6B7280", margin: "5px 0", fontSize: "14px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-1">
                 {item.title}
               </p>
-              <h2 style={{ margin: 0, fontSize: "28px", fontWeight: "800", color: "#111827" }}>{item.count}</h2>
+              <h2 className="text-3xl font-black text-slate-900">{item.count}</h2>
             </div>
           ))}
         </div>
 
-        {/* CONTENT GRIDS */}
-        <div style={{ display: "flex", gap: "25px", flexWrap: "wrap" }}>
+        {/* CONTENT GRIDS (Charts & Activity) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          {/* CHART PLACEHOLDER */}
-          <div style={{ ...cardStyle, flex: 2, minWidth: "400px" }}>
-            <h3 style={{ marginBottom: "25px", fontSize: "20px", fontWeight: "700" }}>Statistikat e Regjistrimeve</h3>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "20px", height: "200px", padding: "10px" }}>
-              {[60, 80, 45, 95, 70, 85].map((h, i) => (
-                <div key={i} style={{
-                  flex: 1,
-                  height: `${h}%`,
-                  background: i === 3 ? "#4F46E5" : "#E0E7FF",
-                  borderRadius: "10px",
-                  transition: "0.3s ease",
-                  cursor: "pointer"
-                }} 
-                title={`${h} regjistrime`}
-                />
-              ))}
+          {/* CHART CARD */}
+          <div className="lg:col-span-2 bg-white p-10 rounded-[2.5rem] border border-slate-50 shadow-sm">
+            <div className="flex justify-between items-center mb-10">
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Statistikat e Regjistrimeve</h3>
+              <select className="bg-slate-50 border-none text-slate-500 font-bold text-xs p-2 rounded-lg outline-none cursor-pointer">
+                <option>6 Mujori i Fundit</option>
+                <option>Viti i Fundit</option>
+              </select>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "15px", color: "#9CA3AF", fontSize: "13px", fontWeight: "600" }}>
-              <span>Jan</span><span>Shk</span><span>Mar</span><span>Pri</span><span>Maj</span><span>Qer</span>
+            
+            <div className="flex items-flex-end gap-5 h-[220px] items-end px-2">
+              {[60, 85, 45, 100, 75, 90].map((h, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-4 group">
+                  <div 
+                    style={{ height: `${h}%` }}
+                    className={`w-full rounded-2xl transition-all duration-500 cursor-pointer ${
+                      i === 3 ? "bg-blue-600 shadow-lg shadow-blue-200" : "bg-blue-50 group-hover:bg-blue-100"
+                    }`}
+                  ></div>
+                  <span className="text-slate-400 font-bold text-xs">
+                    {["Jan", "Shk", "Mar", "Pri", "Maj", "Qer"][i]}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* RECENT ACTIVITY */}
-          <div style={{ ...cardStyle, flex: 1, minWidth: "300px" }}>
-            <h3 style={{ marginBottom: "25px", fontSize: "20px", fontWeight: "700" }}>Aktiviteti i Fundit</h3>
+          {/* RECENT ACTIVITY CARD */}
+          <div className="bg-white p-10 rounded-[2.5rem] border border-slate-50 shadow-sm">
+            <h3 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tighter">Aktiviteti i Fundit</h3>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
-              <div style={{ borderLeft: "4px solid #4F46E5", paddingLeft: "20px" }}>
-                <strong style={{ display: "block", fontSize: "15px" }}>Mbledhje me Stafin</strong>
-                <p style={{ fontSize: "13px", color: "#6B7280", margin: "5px 0" }}>Sot, 09:00 - 10:00</p>
+            <div className="space-y-8">
+              <div className="flex gap-4 relative">
+                <div className="w-1 bg-blue-600 rounded-full h-full absolute left-0"></div>
+                <div className="pl-6">
+                  <strong className="block text-slate-800 text-sm font-bold">Mbledhje me Stafin</strong>
+                  <p className="text-xs text-slate-400 font-medium mt-1">Sot, 09:00 - 10:00</p>
+                </div>
               </div>
 
-              <div style={{ borderLeft: "4px solid #10B981", paddingLeft: "20px" }}>
-                <strong style={{ display: "block", fontSize: "15px" }}>3 Regjistrime të reja</strong>
-                <p style={{ fontSize: "13px", color: "#6B7280", margin: "5px 0" }}>Para 2 orësh</p>
+              <div className="flex gap-4 relative">
+                <div className="w-1 bg-emerald-500 rounded-full h-full absolute left-0"></div>
+                <div className="pl-6">
+                  <strong className="block text-slate-800 text-sm font-bold">3 Regjistrime të reja</strong>
+                  <p className="text-xs text-slate-400 font-medium mt-1">Para 2 orësh</p>
+                </div>
               </div>
 
-              <div style={{ borderLeft: "4px solid #F59E0B", paddingLeft: "20px" }}>
-                <strong style={{ display: "block", fontSize: "15px" }}>Përditësim i Kurrikulës</strong>
-                <p style={{ fontSize: "13px", color: "#6B7280", margin: "5px 0" }}>Dje, 16:45</p>
+              <div className="flex gap-4 relative">
+                <div className="w-1 bg-amber-500 rounded-full h-full absolute left-0"></div>
+                <div className="pl-6">
+                  <strong className="block text-slate-800 text-sm font-bold">Përditësim i Kurrikulës</strong>
+                  <p className="text-xs text-slate-400 font-medium mt-1">Dje, 16:45</p>
+                </div>
               </div>
+              
+              <button className="w-full py-4 mt-4 bg-slate-50 text-slate-500 font-bold text-xs rounded-2xl hover:bg-blue-50 hover:text-blue-600 transition-colors uppercase tracking-widest">
+                Shiko të gjitha
+              </button>
             </div>
           </div>
 
@@ -126,15 +125,5 @@ function Dashboard() {
     </div>
   );
 }
-
-const cardStyle = {
-  background: "white",
-  padding: "30px",
-  borderRadius: "24px",
-  border: "1px solid #E5E7EB",
-  boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.04)",
-  transition: "0.3s ease",
-  cursor: "default"
-};
 
 export default Dashboard;

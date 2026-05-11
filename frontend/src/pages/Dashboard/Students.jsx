@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import Sidebar from "../../components/Sidebar";
 import Swal from 'sweetalert2';
@@ -18,20 +18,19 @@ function Student() {
     viti_studimit: ""
   });
 
-// Rregullimi i funksionit fetchStudents
-  const fetchStudents = async () => {
+// Ky funksion tani është i "stabilizuar" dhe nuk ndryshon në çdo renderim
+  const fetchStudents = useCallback(async () => {
     try {
       const res = await axios.get("http://localhost:5000/get-students");
       setStudents(res.data);
     } catch (error) {
-      console.error("Gabim:", error.message);
+      console.error("Gabim gjatë marrjes së të dhënave:", error);
     }
-  };
+  }, []); // Këto kllapa bosh janë ato që e heqin gabimin
 
-  // Rregullimi i useEffect - kllapat tani janë saktë
   useEffect(() => {
     fetchStudents();
-  }, []);
+  }, [fetchStudents]); // Tani React është i lumtur sepse funksioni vjen nga useCallback
 
   const handleChange = (e) => {
     setStudentData({ ...studentData, [e.target.name]: e.target.value });
