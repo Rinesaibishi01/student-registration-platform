@@ -3,11 +3,12 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const app = express();
 
+
+
 // Importimi i konfigurimit të DB dhe Modeleve
 const sequelize = require('./config/db');
 // 1. NDRYSHIMI: Shto 'Professor' te importet nga models
-const { User, Student, Professor } = require('./models'); 
-
+const { User, Student, Professor, Semester, Course} = require('./models');
 app.use(cors());
 app.use(express.json());
 
@@ -225,6 +226,39 @@ app.put('/update-teacher/:id', async (req, res) => {
     } catch (err) {
         console.error("Gabim gjatë UPDATE:", err);
         res.status(500).json({ Message: "Gabim në server: " + err.message });
+    }
+
+    
+});
+app.post("/semesters/add", async (req, res) => {
+    try {
+        const { emertimi, viti_akademik } = req.body;
+        // Sigurohu që variabla 'Semester' është e definuar më lart
+        const iRi = await Semester.create({ emertimi, viti_akademik });
+        res.status(200).json({ message: "U shtua!", data: iRi });
+    } catch (err) {
+        console.error("Gabim te shtimi i semestrit:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/add-course', async (req, res) => {
+    try {
+        const { emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti } = req.body;
+
+        const kursiIRi = await Course.create({
+            emertimi,
+            pershkrimi,
+            kredite,
+            professor_id,
+            semester_id,
+            kapaciteti
+        });
+
+        res.status(200).json({ Status: "Success", Message: "Kursi u shtua me sukses!", data: kursiIRi });
+    } catch (err) {
+        console.error("Gabim te shtimi i kursit:", err);
+        res.status(500).json({ Status: "Error", Message: err.message });
     }
 });
 app.listen(5000, () => console.log("Serveri po punon me Sequelize në portin 5000"));

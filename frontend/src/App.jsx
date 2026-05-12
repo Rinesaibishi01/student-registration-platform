@@ -8,6 +8,8 @@ import DashboardTeachers from "./pages/Dashboard/DashboardTeachers";
 import DashboardAdmin from "./pages/Dashboard/Dashboard-admin"; 
 // KORRIGJIMI: Importi i munguar që shkaktonte faqen e bardhë
 import Courses from "./pages/Dashboard/Courses"; 
+import Semesters from "./pages/Dashboard/Semester";
+
 
 // Komponenti për mbrojtjen e rrugëve
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -90,8 +92,11 @@ function App() {
 
         {/* Rruga 'Catch-all' - Duhet të jetë gjithmonë e fundit */}
         <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+
+<Route path="/Semesters" element={<Semesters />} />      </Routes>
     </BrowserRouter>
+
+    
   );
 }
 

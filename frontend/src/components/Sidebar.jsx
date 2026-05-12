@@ -11,7 +11,7 @@ function Sidebar() {
     { name: "Studentët", path: "/Students", icon: "🎓" }, 
     { name: "Profesorët", path: "/teachers", icon: "👨‍🏫" },
     { name: "Kurset", path: "/Courses", icon: "📚" },
-  ];
+     { name: "Semestrat", path: "/Semesters", icon: "🗓️" },  ];
 
   const handleLogout = () => {
     localStorage.clear();
