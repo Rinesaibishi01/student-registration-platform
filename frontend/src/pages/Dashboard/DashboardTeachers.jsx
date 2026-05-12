@@ -144,8 +144,8 @@ function DashboardTeachers() {
                     <td className="px-8 py-4 text-gray-500">{t.departamenti || '---'}</td>
                     <td className="px-8 py-4 text-gray-500">{t.universiteti || '---'}</td>
                     <td className="px-8 py-4 text-right">
-                      <button onClick={() => handleEdit(t)} className="text-indigo-600 font-bold hover:text-indigo-900 transition-colors mr-4">Edito</button>
-                      <button onClick={() => handleDelete(t.id)} className="text-red-600 font-bold hover:text-red-900 transition-colors">Fshij</button>
+                      <button onClick={() => handleEdit(t)} className="bg-yellow-100 text-yellow-600 px-4 py-2 rounded-xl hover:bg-yellow-600 hover:text-white transition-all">Edito</button>
+                      <button onClick={() => handleDelete(t.id)} className="bg-red-100 text-red-600 px-4 py-2 rounded-xl hover:bg-red-600 hover:text-white transition-all">Fshij</button>
                     </td>
                   </tr>
                 ))}

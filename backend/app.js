@@ -261,4 +261,108 @@ app.post('/add-course', async (req, res) => {
         res.status(500).json({ Status: "Error", Message: err.message });
     }
 });
+
+// A. LEXIMI: Merr të gjitha kurset me të dhënat e profesorit dhe semestrit
+app.get('/get-courses', async (req, res) => {
+    try {
+        const result = await Course.findAll({
+            include: [
+                { model: Professor, attributes: ['id', 'departamenti'] },
+                { model: Semester, attributes: ['id', 'emertimi', 'viti_akademik'] }
+            ],
+            order: [['id', 'DESC']]
+        });
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ Status: "Error", Message: err.message });
+    }
+});
+
+// B. FSHIRJA: Fshi një kurs
+app.delete('/delete-course/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Course.destroy({ where: { id } });
+        res.json({ Status: "Success" });
+    } catch (err) {
+        res.status(500).json({ Status: "Error", Message: err.message });
+    }
+});
+
+// C. PËRDITËSIMI: Ndrysho të dhënat e një kursi
+// Rruga për të përditësuar semestrin
+app.put('/update-semester/:id', async (req, res) => {
+    const id = req.params.id;
+    try {
+        // Përdorim modelin Semester për të gjetur dhe përditësuar të dhënat
+        const updated = await Semester.update(req.body, {
+            where: { id: id }
+        });
+
+        if (updated[0] > 0) {
+            res.json({ Status: "Success", Message: "Semestri u përditësua me sukses" });
+        } else {
+            res.status(404).json({ Error: "Semestri nuk u gjet" });
+        }
+    } catch (err) {
+        console.error("Gabim gjatë update:", err);
+        res.status(500).json({ Error: "Gabim në server" });
+    }
+});
+
+// 1. Rruga për të marrë semestrat (Kjo do të mbushë tabelën tuaj)
+app.get('/get-semesters', async (req, res) => {
+    try {
+        const semesters = await Semester.findAll();
+        res.json(semesters);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 2. Rruga për të shtuar semestër
+app.post('/add-semester', async (req, res) => {
+    try {
+        await Semester.create(req.body);
+        res.json({ message: "Semestri u shtua me sukses" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 3. Rruga për fshirje (Opsionale për CRUD)
+app.delete('/delete-semester/:id', async (req, res) => {
+    try {
+        await Semester.destroy({ where: { id: req.params.id } });
+        res.json({ message: "U fshi" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+app.put('/update-course/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti } = req.body;
+
+        const updated = await Course.update({
+            emertimi,
+            pershkrimi,
+            kredite,
+            professor_id,
+            semester_id,
+            kapaciteti
+        }, {
+            where: { id }
+        });
+
+        if (updated[0] > 0) {
+            res.json({ Status: "Success", Message: "Kursi u përditësua me sukses" });
+        } else {
+            res.status(404).json({ Status: "Error", Message: "Kursi nuk u gjet" });
+        }
+    } catch (err) {
+        console.error("Gabim gjatë update të kursit:", err);
+        res.status(500).json({ Status: "Error", Message: err.message });
+    }
+});
 app.listen(5000, () => console.log("Serveri po punon me Sequelize në portin 5000"));

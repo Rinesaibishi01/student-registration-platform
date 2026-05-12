@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Sidebar from "../../components/Sidebar";
 
@@ -12,16 +12,45 @@ const Courses = () => {
     kapaciteti: ""
   });
 
-  // Funksioni universal për kapjen e të dhënave nga çdo input
+  const [courses, setCourses] = useState([]);
+  const [isEditing, setIsEditing] = useState(false); // State për të ditur nëse po editojmë
+  const [editId, setEditId] = useState(null); // ID e kursit që po editojmë
+
+  const fetchCourses = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/get-courses");
+      setCourses(res.data);
+    } catch (err) {
+      console.error("Gabim gjatë marrjes së kurseve:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setCourseData({ ...courseData, [name]: value });
   };
 
+  // Funksioni që mbush formën për editim
+  const handleEdit = (course) => {
+    setIsEditing(true);
+    setEditId(course.id);
+    setCourseData({
+      emertimi: course.emertimi,
+      pershkrimi: course.pershkrimi,
+      kredite: course.kredite,
+      professor_id: course.professor_id,
+      semester_id: course.semester_id,
+      kapaciteti: course.kapaciteti
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Te dërgon lart te forma
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Konvertojmë vlerat në numra para dërgimit
     const dataToSend = {
       ...courseData,
       kredite: Number(courseData.kredite),
@@ -31,144 +60,106 @@ const Courses = () => {
     };
 
     try {
-      // Sigurohu që kjo rrugë (URL) përputhet saktësisht me atë të Backend-it tënd
-await axios.post("http://localhost:5000/add-course", courseData);
-      alert("✅ Kursi u shtua me sukses!");
+      if (isEditing) {
+        // UPDATE (PUT)
+        await axios.put(`http://localhost:5000/update-course/${editId}`, dataToSend);
+        alert("✅ Kursi u përditësua!");
+      } else {
+        // CREATE (POST)
+        await axios.post("http://localhost:5000/add-course", dataToSend);
+        alert("✅ Kursi u shtua!");
+      }
       
-      // Pastrojmë formën pas suksesit
-      setCourseData({ 
-        emertimi: "", 
-        pershkrimi: "", 
-        kredite: "", 
-        professor_id: "", 
-        semester_id: "", 
-        kapaciteti: "" 
-      });
+      // Resetimi i formës
+      setIsEditing(false);
+      setEditId(null);
+      setCourseData({ emertimi: "", pershkrimi: "", kredite: "", professor_id: "", semester_id: "", kapaciteti: "" });
+      fetchCourses();
     } catch (err) {
-      console.error("Gabim gjatë shtimit të kursit:", err);
-      alert("❌ Diçka shkoi keq! Kontrolloni nëse profesori ose semestri ekzistojnë në databazë.");
+      alert("❌ Gabim! Kontrolloni të dhënat.");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("A jeni të sigurt?")) {
+      try {
+        await axios.delete(`http://localhost:5000/delete-course/${id}`);
+        fetchCourses();
+      } catch (err) {
+        alert("Gabim gjatë fshirjes");
+      }
     }
   };
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans text-gray-900">
       <Sidebar />
-
       <main className="flex-1 p-8 ml-64">
-        {/* Header Section */}
         <div className="mb-10 text-center lg:text-left">
           <h1 className="text-4xl font-extrabold text-gray-800 tracking-tight">Menaxhimi i Kurseve</h1>
-          <p className="text-gray-500 mt-2 text-lg">Shtoni kurse të reja në sistemin akademik.</p>
+          <p className="text-gray-500 mt-2 text-lg">{isEditing ? "Po editoni kursin..." : "Shtoni kurse të reja në sistem."}</p>
         </div>
 
-        <div className="max-w-3xl mx-auto bg-white p-10 rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800">Detajet e Kursit</h2>
-          </div>
-          
+        {/* FORM SECTION */}
+        <div className={`max-w-4xl mx-auto bg-white p-10 rounded-3xl shadow-xl border transition-all ${isEditing ? 'border-yellow-400' : 'border-gray-100'} mb-12`}>
+          <h2 className="text-2xl font-bold text-gray-800 mb-8">{isEditing ? "Ndrysho Detajet" : "Shto Kurs të Ri"}</h2>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Emri i Kursit */}
-            <div className="group">
-              <label className="block text-sm font-bold text-gray-700 mb-2 transition-colors group-focus-within:text-indigo-600">
-                Emërtimi i Kursit
-              </label>
-              <input 
-                type="text" 
-                name="emertimi"
-                required
-                placeholder="Psh. Shkenca Kompjuterike 1"
-                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
-                value={courseData.emertimi}
-                onChange={handleChange}
-              />
-            </div>
-
-            {/* Përshkrimi */}
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Përshkrimi i Kursit</label>
-              <textarea 
-                name="pershkrimi"
-                rows="3"
-                placeholder="Shkruani një përshkrim të shkurtër..."
-                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
-                value={courseData.pershkrimi}
-                onChange={handleChange}
-              />
-            </div>
-
-            {/* Kreditet dhe Kapaciteti */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Kredite (ECTS)</label>
-                <input 
-                  type="number" 
-                  name="kredite"
-                  required
-                  placeholder="Psh. 6"
-                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
-                  value={courseData.kredite}
-                  onChange={handleChange}
-                />
+              <div className="md:col-span-2">
+                <label className="block text-sm font-bold text-gray-700 mb-2">Emërtimi i Kursit</label>
+                <input type="text" name="emertimi" required className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500" value={courseData.emertimi} onChange={handleChange} />
               </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Kapaciteti (Studentë)</label>
-                <input 
-                  type="number" 
-                  name="kapaciteti"
-                  required
-                  placeholder="Psh. 40"
-                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
-                  value={courseData.kapaciteti}
-                  onChange={handleChange}
-                />
+              <div className="md:col-span-2">
+                <label className="block text-sm font-bold text-gray-700 mb-2">Përshkrimi</label>
+                <textarea name="pershkrimi" rows="2" className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500" value={courseData.pershkrimi} onChange={handleChange} />
               </div>
+              <input type="number" name="kredite" placeholder="Kredite" className="p-4 bg-gray-50 border rounded-2xl" value={courseData.kredite} onChange={handleChange} />
+              <input type="number" name="kapaciteti" placeholder="Kapaciteti" className="p-4 bg-gray-50 border rounded-2xl" value={courseData.kapaciteti} onChange={handleChange} />
+              <input type="number" name="professor_id" placeholder="ID e Profesorit" className="p-4 bg-gray-50 border rounded-2xl" value={courseData.professor_id} onChange={handleChange} />
+              <input type="number" name="semester_id" placeholder="ID e Semestrit" className="p-4 bg-gray-50 border rounded-2xl" value={courseData.semester_id} onChange={handleChange} />
             </div>
-
-            {/* ID e Profesorit dhe Semestrit */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">ID e Profesorit (Nga DB)</label>
-                <input 
-                  type="number" 
-                  name="professor_id"
-                  required
-                  placeholder="ID psh. 5 ose 7"
-                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
-                  value={courseData.professor_id}
-                  onChange={handleChange}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">ID e Semestrit (Nga DB)</label>
-                <input 
-                  type="number" 
-                  name="semester_id"
-                  required
-                  placeholder="ID psh. 1"
-                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all"
-                  value={courseData.semester_id}
-                  onChange={handleChange}
-                />
-              </div>
+            
+            <div className="flex gap-4">
+               <button type="submit" className={`flex-1 ${isEditing ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-indigo-600 hover:bg-indigo-700'} text-white font-black py-4 rounded-2xl shadow-lg transition-all uppercase tracking-widest cursor-pointer`}>
+                {isEditing ? "Përditëso Kursin" : "Ruaj Kursin në Sistem"}
+              </button>
+              {isEditing && (
+                <button type="button" onClick={() => { setIsEditing(false); setCourseData({ emertimi: "", pershkrimi: "", kredite: "", professor_id: "", semester_id: "", kapaciteti: "" }); }} className="bg-gray-400 text-white px-6 rounded-2xl">Anulo</button>
+              )}
             </div>
-
-            {/* Submit Button */}
-            <button 
-              type="submit" 
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all transform active:scale-95 uppercase tracking-widest mt-4 cursor-pointer"
-            >
-              Ruaj Kursin në Sistem
-            </button>
           </form>
+        </div>
+
+        {/* TABLE SECTION */}
+        <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-gray-100 text-gray-600">
+              <tr>
+                <th className="p-4">Emërtimi</th>
+                <th className="p-4">Kredite</th>
+                <th className="p-4 text-center">Veprimet</th>
+              </tr>
+            </thead>
+            <tbody>
+              {courses.map((course) => (
+                <tr key={course.id} className="border-b hover:bg-gray-50">
+                  <td className="p-4 font-medium">{course.emertimi}</td>
+                  <td className="p-4">{course.kredite} ECTS</td>
+                  <td className="p-4 text-center space-x-2">
+                    <button onClick={() => handleEdit(course)} className="bg-yellow-100 text-yellow-600 px-4 py-2 rounded-xl hover:bg-yellow-600 hover:text-white transition-all">
+                      Edit
+                    </button>
+                    <button onClick={() => handleDelete(course.id)} className="bg-red-100 text-red-600 px-4 py-2 rounded-xl hover:bg-red-600 hover:text-white transition-all">
+                      Fshij
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </main>
     </div>
   );
 };
-
 export default Courses;

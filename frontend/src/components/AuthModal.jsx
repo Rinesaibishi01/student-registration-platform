@@ -5,10 +5,9 @@ import { useNavigate } from "react-router-dom";
 import 'sweetalert2/dist/sweetalert2.min.css';
 
 function AuthModal({ isOpen, onClose, initialView = "login" }) {
-  // Përcakto gjendjen fillestare direkt këtu, pa pasur nevojë për useEffect
   const [isLogin, setIsLogin] = useState(initialView === "login");
-  
   const navigate = useNavigate();
+  
   const [formData, setFormData] = useState({
     firstname: "",
     lastname: "",
@@ -16,59 +15,59 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
     password: ""
   });
 
-  // Kjo pjesë shtohet vetëm nëse dëshiron që modali të ndërrojë pamjen 
-  // nëse ai është i hapur dhe ti klikon diçka tjetër në Navbar
+  // Përditëso gjendjen nëse ndryshon prop-i nga Navbar
   useEffect(() => {
     setIsLogin(initialView === "login");
   }, [initialView]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const url = isLogin ? 'http://localhost:5000/login' : 'http://localhost:5000/register';
-      const res = await axios.post(url, formData);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const url = isLogin ? 'http://localhost:5000/login' : 'http://localhost:5000/register';
+    const res = await axios.post(url, formData);
 
-      if (res.data.Status === "Success") {
-        if (res.data.token) {
-          localStorage.setItem("token", res.data.token);
-        }
-        
-        localStorage.setItem("role", res.data.role);
-        localStorage.setItem("userName", res.data.name);
-        
-        onClose();
+    console.log("Përgjigja e plotë nga serveri:", res.data); // Shiko këtë në Console!
 
-        // Navigimi sipas rolit të përdoruesit
-        if (res.data.role === 'admin') {
-          navigate("/Dashboard-admin");
-        } else if (res.data.role === 'student') {
-          navigate("/student-panel"); 
-        } else {
-          navigate("/");
-        }
+    if (res.data.Status === "Success") {
+      const userRole = res.data.role;
+      const userName = res.data.name;
 
-        Swal.fire({
-          title: `Mirësevini ${res.data.name}!`,
-          text: isLogin ? 'U kyçët me sukses' : 'Llogaria u krijua me sukses',
-          icon: 'success',
-          timer: 1500,
-          showConfirmButton: false
-        });
+      // Kjo do të na tregojë çfarë roli po merr nga DB
+      //alert("Login me sukses! Roli yt është: " + userRole); spo me dueht nihere
+
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("role", userRole);
+      localStorage.setItem("userName", userName);
+
+      onClose();
+
+      // Kontrollojmë rolin saktësisht
+      if (userRole === 'admin') {
+        navigate("/Dashboard-admin");
+      } else if (userRole === 'professor') {
+       // alert("Duke të dërguar te Dashboard i Profesorit...");
+        navigate("/teacher-dashboard");
+      } else if (userRole === 'student') {
+        navigate("/student-panel");
       } else {
-        Swal.fire('Gabim!', res.data.Message, 'error');
+        alert("KUJDES: Roli '" + userRole + "' nuk njihet. Po kthehesh në ballinë.");
+        navigate("/");
       }
-    } catch (err) {
-      console.error(err);
-      const errorMsg = err.response?.data?.Message || 'Serveri nuk po përgjigjet ose email-i ekziston.';
-      Swal.fire('Gabim!', errorMsg, 'error');
+    } else {
+      Swal.fire('Gabim!', res.data.Message, 'error');
     }
-  };
+  } catch (err) {
+    console.error(err);
+    Swal.fire('Gabim!', 'Serveri nuk u gjet ose ka një gabim në kod.', 'error');
+  }
+};
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-slate-800">
       <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl relative p-10 border border-slate-100">
+        
         {/* Butoni për mbyllje */}
         <button 
           onClick={onClose} 
@@ -78,7 +77,7 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
         </button>
         
         <h2 className="text-3xl font-black text-center mb-8 uppercase tracking-tighter text-slate-900">
-          {isLogin ? "Kyçu në sistem" : "Regjistrohu si student"}
+          {isLogin ? "Kyçu në sistem" : "Krijo Llogari"}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -89,6 +88,7 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
                 placeholder="Emri" 
                 className="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-red-500 outline-none bg-slate-50"
                 required
+                value={formData.firstname}
                 onChange={e => setFormData({...formData, firstname: e.target.value})} 
               />
               <input 
@@ -96,22 +96,27 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
                 placeholder="Mbiemri" 
                 className="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-red-500 outline-none bg-slate-50"
                 required
+                value={formData.lastname}
                 onChange={e => setFormData({...formData, lastname: e.target.value})} 
               />
             </div>
           )}
+          
           <input 
             type="email" 
             placeholder="Email Adresa" 
             className="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-red-500 outline-none bg-slate-50"
             required
+            value={formData.email}
             onChange={e => setFormData({...formData, email: e.target.value})} 
           />
+          
           <input 
             type="password" 
             placeholder="Fjalëkalimi" 
             className="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-red-500 outline-none bg-slate-50"
             required
+            value={formData.password}
             onChange={e => setFormData({...formData, password: e.target.value})} 
           />
           
