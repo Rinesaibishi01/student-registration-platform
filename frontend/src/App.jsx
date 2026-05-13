@@ -9,6 +9,7 @@ import DashboardAdmin from "./pages/Dashboard/Dashboard-admin";
 import Courses from "./pages/Dashboard/Courses"; 
 import Semesters from "./pages/Dashboard/Semester";
 import TeacherDashboard from "./pages/Dashboard/TeacherDashboard";
+import Grading from "./pages/Dashboard/Grading";
 
 // Komponenti për mbrojtjen e rrugëve
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -99,7 +100,7 @@ function App() {
           } 
         />
 
-        {/* 4. RRUGA E PROFESORIT */}
+        {/* 4. RRUGËT E PROFESORIT */}
         <Route 
           path="/teacher-dashboard" 
           element={
@@ -109,7 +110,16 @@ function App() {
           } 
         />
 
-        {/* 5. CATCH-ALL (Gjithmonë e fundit fare) */}
+        <Route 
+          path="/grading" 
+          element={
+            <ProtectedRoute allowedRole="professor">
+              <Grading />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* 5. CATCH-ALL (Gjithmonë e fundit fare brenda Routes) */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

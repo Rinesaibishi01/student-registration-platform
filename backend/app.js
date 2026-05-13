@@ -16,16 +16,30 @@ app.use(express.json());
 sequelize.sync({ alter: true })
   .then(() => console.log('Sequelize: Databaza është sinkronizuar me sukses!'))
   .catch(err => console.log('Sequelize Error:', err));
-
-// --- RRUGËT EKZISTUESE (REGISTER, LOGIN, STUDENTS) ---
 app.post('/register', async (req, res) => {
     const { firstname, lastname, email, password } = req.body;
     try {
         const existingUser = await User.findOne({ where: { email } });
         if (existingUser) return res.json({ Status: "Exists", Message: "Ky email është i regjistruar!" });
-        await User.create({ firstname, lastname, email, password, role: 'student' });
-        return res.json({ Status: "Success" });
-    } catch (err) { return res.status(500).json({ Status: "Error", Message: err.message }); }
+
+        // Krijojmë përdoruesin e ri
+        const newUser = await User.create({ 
+            firstname, 
+            lastname, 
+            email, 
+            password, 
+            role: 'student' // Roli default kur regjistrohen vetë
+        });
+
+        // Tani kthejmë të dhënat që i duhen React-it
+        return res.json({ 
+            Status: "Success", 
+            role: newUser.role, 
+            name: newUser.firstname 
+        });
+    } catch (err) { 
+        return res.status(500).json({ Status: "Error", Message: err.message }); 
+    }
 });
 
 app.post('/login', async (req, res) => {
