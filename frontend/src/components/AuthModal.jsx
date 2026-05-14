@@ -4,8 +4,30 @@ import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import 'sweetalert2/dist/sweetalert2.min.css';
 
+// Funksionet ndihmëse jashtë që të mos kemi gabime renditjeje (ESLint)
+const validateForm = (isLogin, formData) => {
+  let tempErrors = {};
+  const emailRegex = /\S+@\S+\.\S+/;
+
+  if (!isLogin) {
+    if (!formData.firstname.trim()) tempErrors.firstname = "Emri kërkohet";
+    if (!formData.lastname.trim()) tempErrors.lastname = "Mbiemri kërkohet";
+  }
+  if (!formData.email.trim()) {
+    tempErrors.email = "Email-i kërkohet";
+  } else if (!emailRegex.test(formData.email)) {
+    tempErrors.email = "Email-i nuk është valid";
+  }
+  if (!formData.password) {
+    tempErrors.password = "Fjalëkalimi kërkohet";
+  } else if (formData.password.length < 6) {
+    tempErrors.password = "Të paktën 6 karaktere";
+  }
+  return tempErrors;
+};
+
 function AuthModal({ isOpen, onClose, initialView = "login" }) {
-  const [isLogin, setIsLogin] = useState(initialView === "login");
+  const [isLogin, setIsLogin] = useState(true);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   
@@ -16,7 +38,7 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
     password: ""
   });
 
-  // Rregullimi i bllokimit aria-hidden (Zgjidhja për image_2c9afa.jpg)
+  // Rregullimi i state-it dhe zhbllokimi i UI kur hapet modal-i
   useEffect(() => {
     if (isOpen) {
       setIsLogin(initialView === "login");
@@ -29,32 +51,14 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
     }
   }, [isOpen, initialView]);
 
-  const validate = () => {
-    let tempErrors = {};
-    const emailRegex = /\S+@\S+\.\S+/;
-
-    if (!isLogin) {
-      if (!formData.firstname.trim()) tempErrors.firstname = "Emri kërkohet";
-      if (!formData.lastname.trim()) tempErrors.lastname = "Mbiemri kërkohet";
-    }
-    if (!formData.email.trim()) {
-      tempErrors.email = "Email-i kërkohet";
-    } else if (!emailRegex.test(formData.email)) {
-      tempErrors.email = "Email-i nuk është valid";
-    }
-    if (!formData.password) {
-      tempErrors.password = "Fjalëkalimi kërkohet";
-    } else if (formData.password.length < 6) {
-      tempErrors.password = "Të paktën 6 karaktere";
-    }
-
-    setErrors(tempErrors);
-    return Object.keys(tempErrors).length === 0;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    const tempErrors = validateForm(isLogin, formData);
+    
+    if (Object.keys(tempErrors).length > 0) {
+      setErrors(tempErrors);
+      return;
+    }
 
     try {
       const url = isLogin ? 'http://localhost:5000/login' : 'http://localhost:5000/register';
@@ -62,7 +66,6 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
 
       if (res.data.Status === "Success") {
         if (isLogin) {
-          // LOGIN SUCCESS
           localStorage.setItem("token", res.data.token);
           localStorage.setItem("role", res.data.role);
           localStorage.setItem("userName", res.data.name);
@@ -72,17 +75,13 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
           else if (res.data.role === 'professor') navigate("/teacher-dashboard");
           else navigate("/student-panel");
         } else {
-          // REGISTER SUCCESS (Zgjidhja për image_2c323e.jpg)
+          setIsLogin(true);
+          setFormData(prev => ({ ...prev, password: "" })); 
           Swal.fire({
             title: 'Sukses!',
-            text: 'Llogaria u krijua. Tani mund të kyçeni.',
+            text: 'Llogaria u krijua, tani mund të kyçeni.',
             icon: 'success',
-            confirmButtonColor: '#ef4444'
-          }).then((result) => {
-            if (result.isConfirmed) {
-              setIsLogin(true); // Ktheje te login
-              setFormData({ ...formData, password: "" }); // Pastro fushën e fjalëkalimit
-            }
+            confirmButtonColor: '#6366f1'
           });
         }
       } else {
@@ -90,7 +89,7 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
       }
     } catch (err) {
       console.error(err);
-      Swal.fire('Gabim!', 'Serveri nuk po përgjigjet. Sigurohu që Node.js dhe XAMPP janë ndezur.', 'error');
+      Swal.fire('Gabim!', 'Serveri nuk po përgjigjet.', 'error');
     }
   };
 
@@ -102,7 +101,7 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
         
         <button 
           onClick={onClose} 
-          className="absolute top-6 right-6 text-gray-400 hover:text-red-600 text-2xl cursor-pointer bg-transparent border-none"
+          className="absolute top-6 right-6 text-gray-400 hover:text-red-600 text-2xl cursor-pointer bg-transparent border-none outline-none"
         >
           ✕
         </button>
@@ -120,7 +119,7 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="flex flex-col">
                 <input 
                   type="text" placeholder="Emri" 
                   className={`w-full p-4 border rounded-2xl outline-none bg-slate-50 transition-all ${errors.firstname ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200 focus:ring-2 focus:ring-red-500'}`}
@@ -129,7 +128,7 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
                 />
                 {errors.firstname && <p className="text-red-500 text-xs mt-1 ml-2">{errors.firstname}</p>}
               </div>
-              <div>
+              <div className="flex flex-col">
                 <input 
                   type="text" placeholder="Mbiemri" 
                   className={`w-full p-4 border rounded-2xl outline-none bg-slate-50 transition-all ${errors.lastname ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200 focus:ring-2 focus:ring-red-500'}`}
@@ -141,7 +140,7 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
             </div>
           )}
           
-          <div>
+          <div className="flex flex-col">
             <input 
               type="email" placeholder="Email Adresa" 
               className={`w-full p-4 border rounded-2xl outline-none bg-slate-50 transition-all ${errors.email ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200 focus:ring-2 focus:ring-red-500'}`}
@@ -151,7 +150,7 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
             {errors.email && <p className="text-red-500 text-xs mt-1 ml-2">{errors.email}</p>}
           </div>
           
-          <div>
+          <div className="flex flex-col">
             <input 
               type="password" placeholder="Fjalëkalimi" 
               className={`w-full p-4 border rounded-2xl outline-none bg-slate-50 transition-all ${errors.password ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200 focus:ring-2 focus:ring-red-500'}`}
@@ -174,7 +173,7 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
           <button 
             type="button"
             onClick={() => setIsLogin(!isLogin)} 
-            className="text-red-600 cursor-pointer font-bold hover:underline ml-1 bg-transparent border-none"
+            className="text-red-600 cursor-pointer font-bold hover:underline ml-1 bg-transparent border-none outline-none"
           >
             {isLogin ? "Regjistrohu" : "Kyçu"}
           </button>
