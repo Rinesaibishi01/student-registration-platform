@@ -6,19 +6,23 @@ import EditStudent from "./pages/Dashboard/EditStudent";
 import StudentDashboard from "./pages/Dashboard/StudentDashboard"; 
 import DashboardTeachers from "./pages/Dashboard/DashboardTeachers";
 import DashboardAdmin from "./pages/Dashboard/Dashboard-admin"; 
-// KORRIGJIMI: Importi i munguar që shkaktonte faqen e bardhë
 import Courses from "./pages/Dashboard/Courses"; 
+import Semesters from "./pages/Dashboard/Semester";
+import TeacherDashboard from "./pages/Dashboard/TeacherDashboard";
+import Grading from "./pages/Dashboard/Grading";
 
 // Komponenti për mbrojtjen e rrugëve
 const ProtectedRoute = ({ children, allowedRole }) => {
-  const userRole = localStorage.getItem("role"); 
+  const userRole = localStorage.getItem("role");
+  
+  console.log("Mbrojtja: Roli i lejuar:", allowedRole, "Roli në memorje:", userRole);
 
   if (!userRole) {
-    return <Navigate to="/" />; 
+    return <Navigate to="/" />;
   }
 
-  if (userRole.toLowerCase() !== allowedRole.toLowerCase()) {
-    return <Navigate to="/" />; 
+  if (allowedRole && userRole.toLowerCase().trim() !== allowedRole.toLowerCase().trim()) {
+    return <Navigate to="/" />;
   }
 
   return children;
@@ -28,10 +32,10 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Rruga publike */}
+        {/* 1. RRUGA PUBLIKE */}
         <Route path="/" element={<Home />} />
 
-        {/* --- RRUGËT E ADMINIT (VETËM PËR ROLE='ADMIN') --- */}
+        {/* 2. RRUGËT E ADMINIT */}
         <Route 
           path="/Dashboard-admin" 
           element={
@@ -68,7 +72,6 @@ function App() {
           } 
         />
 
-        {/* SHTESA: Rruga e Kurseve e mbrojtur për Admin */}
         <Route 
           path="/courses" 
           element={
@@ -78,7 +81,16 @@ function App() {
           } 
         />
 
-        {/* --- RRUGËT E STUDENTIT (VETËM PËR ROLE='STUDENT') --- */}
+        <Route 
+          path="/Semesters" 
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <Semesters />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* 3. RRUGA E STUDENTIT */}
         <Route 
           path="/student-panel" 
           element={
@@ -88,7 +100,26 @@ function App() {
           } 
         />
 
-        {/* Rruga 'Catch-all' - Duhet të jetë gjithmonë e fundit */}
+        {/* 4. RRUGËT E PROFESORIT */}
+        <Route 
+          path="/teacher-dashboard" 
+          element={
+            <ProtectedRoute allowedRole="professor">
+              <TeacherDashboard />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/grading" 
+          element={
+            <ProtectedRoute allowedRole="professor">
+              <Grading />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* 5. CATCH-ALL (Gjithmonë e fundit fare brenda Routes) */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

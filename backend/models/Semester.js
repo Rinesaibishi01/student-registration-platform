@@ -7,6 +7,7 @@ const Semester = sequelize.define('Semester', {
         autoIncrement: true,
         primaryKey: true
     },
+    
     emertimi: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -18,7 +19,7 @@ const Semester = sequelize.define('Semester', {
         // Shembull: "2025-2026"
     }
 }, {
-    tableName: 'Semesters', // Emri i tabelës në databazë
+    tableName: 'semesters', // Emri i tabelës në databazë
     timestamps: false       // Nuk na duhen createdAt/updatedAt për këtë tabelë
 });
 
