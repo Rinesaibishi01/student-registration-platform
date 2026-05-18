@@ -1,22 +1,25 @@
 const express = require("express");
 const cors = require("cors");
-const jwt = require("jsonwebtoken"); // Shto këtë (instaloje me: npm install jsonwebtoken)
+const jwt = require("jsonwebtoken");
 const app = express();
 
 // Importimi i konfigurimit të DB dhe Modeleve
 const sequelize = require('./config/db');
-const { User, Student } = require('./models');
+const { User, Student, Enrollment } = require('./models'); 
 
+// Importi i rrugëve të reja (Vetëm një herë këtu lart)
+const enrollmentRoutes = require('./routes/enrollmentRoutes'); 
+
+// Middleware-ët kryesorë (Duhet të jenë gjithmonë para rrugëve/routes)
 app.use(cors());
 app.use(express.json());
 
 // 1. SINKRONIZIMI I DATABAZËS
-// Kjo krijon tabelat dhe shton kolonat si 'user_id' automatikisht në MySQL
 sequelize.sync({ alter: true })
   .then(() => console.log('Sequelize: Databaza është sinkronizuar me sukses!'))
   .catch(err => console.log('Sequelize Error:', err));
 
-// 2. REGJISTRIMI (Duke përdorur Sequelize)
+// 2. REGJISTRIMI
 app.post('/register', async (req, res) => {
     const { firstname, lastname, email, password } = req.body;
     try {
@@ -26,12 +29,11 @@ app.post('/register', async (req, res) => {
             return res.json({ Status: "Exists", Message: "Ky email është i regjistruar!" });
         }
 
-        // Krijojmë përdoruesin e ri
         await User.create({
             firstname,
             lastname,
             email,
-            password, // Në projekt real këtu përdoret bcrypt.hash
+            password, 
             role: 'student'
         });
 
@@ -41,14 +43,20 @@ app.post('/register', async (req, res) => {
     }
 });
 
-// 3. LOGIN (Me gjenerim të Token-it)
+// 3. LOGIN (I përmirësuar me studentId)
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User.findOne({ where: { email, password } });
 
         if (user) {
-            // Krijohet Token-i (vlefshëm për 1 ditë)
+            // Gjejmë studentId nëse përdoruesi është student
+            let studentId = null;
+            if (user.role === 'student') {
+                const student = await Student.findOne({ where: { user_id: user.id } });
+                studentId = student ? student.id : null;
+            }
+
             const token = jwt.sign(
                 { id: user.id, role: user.role },
                 "sekreti_yt_shume_i_sigurt",
@@ -59,7 +67,8 @@ app.post('/login', async (req, res) => {
                 Status: "Success", 
                 role: user.role, 
                 name: user.firstname,
-                token: token // Dërgojmë token-in te frontend-i
+                studentId: studentId, // Kjo i dërgohet Frontend-it
+                token: token 
             });
         } else {
             return res.json({ Status: "Invalid", Message: "Email ose fjalëkalim i gabuar!" });
@@ -69,8 +78,10 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// 4. CRUD - READ STUDENTS
-// Marrim studentët dhe i bashkojmë me të dhënat e User (firstname, email)
+// 4. REGJISTRO RRUGËT E ENROLLMENTS (Vetëm një herë, këtu poshtë express.json())
+app.use('/api/enrollments', enrollmentRoutes);
+
+// 5. CRUD - READ STUDENTS
 app.get('/students', async (req, res) => {
     try {
         const result = await Student.findAll({
@@ -86,7 +97,7 @@ app.get('/students', async (req, res) => {
     }
 });
 
-// 5. DELETE STUDENT
+// 6. DELETE STUDENT
 app.delete('/delete-student/:id', async (req, res) => {
     try {
         const id = req.params.id;
@@ -97,12 +108,11 @@ app.delete('/delete-student/:id', async (req, res) => {
     }
 });
 
-// 6. SHTIMI I NJË STUDENTI TË RI (Me lidhje User-Student)
+// 7. SHTIMI I NJË STUDENTI TË RI
 app.post('/add-student', async (req, res) => {
     try {
         const { firstname, lastname, email, numri_studentit, programi, viti_studimit } = req.body;
 
-        // Krijojmë llogarinë (User)
         const newUser = await User.create({
             firstname,
             lastname,
@@ -111,7 +121,6 @@ app.post('/add-student', async (req, res) => {
             role: 'student'
         });
 
-        // Krijojmë detajet e studentit dhe i lidhim via user_id
         await Student.create({
             user_id: newUser.id,
             numri_studentit,
