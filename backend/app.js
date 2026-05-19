@@ -3,40 +3,28 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const app = express();
 
-
-
-// Importimi i konfigurimit të DB dhe Modeleve
 const sequelize = require('./config/db');
-// 1. NDRYSHIMI: Shto 'Professor' te importet nga models
-const { User, Student, Professor, Semester, Course} = require('./models');
+const { User, Student, Enrollment, Professor, Semester, Course } = require('./models'); 
+const enrollmentRoutes = require('./routes/enrollmentRoutes'); 
+
 app.use(cors());
 app.use(express.json());
 
-// 1. SINKRONIZIMI I DATABAZËS
 sequelize.sync({ alter: true })
-  .then(() => console.log('Sequelize: Databaza është sinkronizuar me sukses!'))
+  .then(() => console.log('Sequelize: Databaza është sinkronizuar!'))
   .catch(err => console.log('Sequelize Error:', err));
+
 app.post('/register', async (req, res) => {
     const { firstname, lastname, email, password } = req.body;
     try {
         const existingUser = await User.findOne({ where: { email } });
         if (existingUser) return res.json({ Status: "Exists", Message: "Ky email është i regjistruar!" });
 
-        // Krijojmë përdoruesin e ri
-        const newUser = await User.create({ 
-            firstname, 
-            lastname, 
-            email, 
-            password, 
-            role: 'student' // Roli default kur regjistrohen vetë
+        const newUser = await User.create({
+            firstname, lastname, email, password, role: 'student'
         });
 
-        // Tani kthejmë të dhënat që i duhen React-it
-        return res.json({ 
-            Status: "Success", 
-            role: newUser.role, 
-            name: newUser.firstname 
-        });
+        return res.json({ Status: "Success", role: newUser.role, name: newUser.firstname });
     } catch (err) { 
         return res.status(500).json({ Status: "Error", Message: err.message }); 
     }
@@ -47,336 +35,68 @@ app.post('/login', async (req, res) => {
     try {
         const user = await User.findOne({ where: { email, password } });
         if (user) {
+            let studentId = null;
+            if (user.role === 'student') {
+                const student = await Student.findOne({ where: { user_id: user.id } });
+                studentId = student ? student.id : null;
+            }
             const token = jwt.sign({ id: user.id, role: user.role }, "sekreti_yt_shume_i_sigurt", { expiresIn: '1d' });
-            return res.json({ Status: "Success", role: user.role, name: user.firstname, token: token });
-        } else { return res.json({ Status: "Invalid", Message: "Email ose fjalëkalim i gabuar!" }); }
+            return res.json({ Status: "Success", role: user.role, name: user.firstname, studentId, token });
+        } else { 
+            return res.json({ Status: "Invalid", Message: "Gabim!" }); 
+        }
     } catch (err) { return res.status(500).json({ Status: "Error", Message: err.message }); }
 });
 
 app.get('/get-students', async (req, res) => {
     try {
         const result = await Student.findAll({
-            // Join me tabelën User për të marrë emrin dhe mbiemrin
-            include: [{ 
-                model: User, 
-                attributes: ['firstname', 'lastname', 'email'] 
-            }],
+            include: [{ model: User, attributes: ['firstname', 'lastname', 'email'] }],
             order: [['id', 'DESC']]
         });
         res.json(result);
-    } catch (err) { 
-        res.status(500).json({ Status: "Error", Message: err.message }); 
-    }
+    } catch (err) { res.status(500).json({ Status: "Error", Message: err.message }); }
 });
 
 app.delete('/delete-student/:id', async (req, res) => {
     try {
-        const { id } = req.params;
-        
-        // 1. Gjejmë studentin për të marrë user_id-në e lidhur
-        const student = await Student.findByPk(id);
-        
-        if (!student) {
-            return res.status(404).json({ Status: "Error", Message: "Studenti nuk u gjet" });
-        }
-
-        const userId = student.user_id;
-
-        // 2. Fshijmë studentin (tabela students)
-        await student.destroy();
-
-        // 3. Fshijmë përdoruesin (tabela users)
-        await User.destroy({ where: { id: userId } });
-
-        return res.json({ Status: "Success" });
-    } catch (err) { 
-        console.error("Gabim gjatë fshirjes:", err);
-        return res.status(500).json({ Status: "Error", Message: err.message }); 
-    }
-});
-app.put('/update-student/:id', async (req, res) => {
-    const { id } = req.params;
-    const { emri, mbiemri, email, numri_studentit, programi, viti_studimit } = req.body;
-
-    try {
-        // Gjejmë studentin për të marrë user_id-në
-        const student = await Student.findByPk(id);
-        
+        const student = await Student.findByPk(req.params.id);
         if (student) {
-            // Përditësojmë User-in
-            await User.update(
-                { firstname: emri, lastname: mbiemri, email: email },
-                { where: { id: student.user_id } }
-            );
-
-            // Përditësojmë Studentin
-            await student.update({ numri_studentit, programi, viti_studimit });
-
-            res.json({ Status: "Success" });
-        } else {
-            res.status(404).json({ Message: "Studenti nuk u gjet" });
+            const userId = student.user_id;
+            await student.destroy();
+            await User.destroy({ where: { id: userId } });
+            return res.json({ Status: "Success" });
         }
-    } catch (err) {
-        res.status(500).json({ Message: err.message });
-    }
+    } catch (err) { return res.status(500).json({ Status: "Error" }); }
 });
 
-//
-app.post('/add-student', async (req, res) => {
+app.put('/update-student/:id', async (req, res) => {
     try {
-        // Marrim të gjitha fushat që dërgon Frontend-i
-        const { emri, mbiemri, email, numri_studentit, programi, viti_studimit } = req.body;
-
-        // 1. Krijohet User-i me të dhënat reale
-        const newUser = await User.create({
-            firstname: emri,
-            lastname: mbiemri,
-            email: email,
-            password: 'student123',
-            role: 'student'
-        });
-
-        // 2. Lidhet me tabelën Student
-        await Student.create({ 
-            user_id: newUser.id, 
-            numri_studentit, 
-            programi, 
-            viti_studimit: viti_studimit || 1 
-        });
-
-        res.json({ Status: "Success" });
-    } catch (err) { 
-        res.status(500).json({ Status: "Error", Message: err.message }); 
-    }
+        const student = await Student.findByPk(req.params.id);
+        if (student) {
+            await User.update({ firstname: req.body.emri, lastname: req.body.mbiemri, email: req.body.email }, { where: { id: student.user_id } });
+            await student.update({ numri_studentit: req.body.numri_studentit, programi: req.body.programi, viti_studimit: req.body.viti_studimit });
+            res.json({ Status: "Success" });
+        }
+    } catch (err) { res.status(500).json({ Message: err.message }); }
 });
 
-// 2. NDRYSHIMI: RRUGA E RREGULLUAR PËR PROFESORËT
 app.post('/add-teacher', async (req, res) => {
     try {
-        // Shiko në terminal se çfarë po vjen saktësisht nga frontendi
-        console.log("Të dhënat e pranuara:", req.body); 
-
         const { emri, mbiemri, email, telefoni, grada, universiteti, adresa } = req.body;
-
-        const newUser = await User.create({
-            firstname: emri,
-            lastname: mbiemri,
-            email: email,
-            password: 'professor123',
-            role: 'professor'
-        });
-
-        // KETU DUHET KUJDES: Emrat majtas duhet të jenë si në DB
-        // Emrat djathtas duhet të jenë si ato te { const } më lart
-        await Professor.create({
-            user_id: newUser.id,
-            departamenti: grada, 
-            telefoni: telefoni,
-            universiteti: universiteti,
-            adresa: adresa
-        });
-
+        const newUser = await User.create({ firstname: emri, lastname: mbiemri, email, password: 'professor123', role: 'professor' });
+        await Professor.create({ user_id: newUser.id, departamenti: grada, telefoni, universiteti, adresa });
         return res.json({ Status: "Success" });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ Status: "Error", Message: err.message });
-    }
+    } catch (err) { return res.status(500).json({ Status: "Error" }); }
 });
 
-//kodi per me marre listen e prfesorve nga databaza dhe me i dergu ne frontend
 app.get('/get-teachers', async (req, res) => {
     try {
-        // Përdorim një Query SQL për të bashkuar tabelat dhe për të marrë emrin e plotë
-        const [results] = await sequelize.query(`
-            SELECT u.id, u.firstname, u.lastname, u.email, p.departamenti, p.universiteti 
-            FROM users u 
-            JOIN professors p ON u.id = p.user_id
-            WHERE u.role = 'professor'
-        `);
-        
-        console.log("Profesorët u gjetën me sukses");
-        res.status(200).json(results);
-    } catch (err) {
-        console.error("Gabim te get-teachers:", err);
-        res.status(500).json({ Message: "Gabim gjatë marrjes së të dhënave: " + err.message });
-    }
-});
-// Rruga për të fshirë një profesor
-app.delete('/delete-teacher/:id', async (req, res) => {
-    const { id } = req.params;
-    try {
-        // Fshijmë së pari nga tabela professors (për shkak të Foreign Key)
-        await sequelize.query("DELETE FROM professors WHERE user_id = ?", { replacements: [id] });
-        // Pastaj fshijmë nga tabela users
-        await sequelize.query("DELETE FROM users WHERE id = ?", { replacements: [id] });
-        
-        res.json({ Status: "Success" });
-    } catch (err) {
-        res.status(500).json({ Message: err.message });
-    }
+        const [results] = await sequelize.query("SELECT u.id, u.firstname, u.lastname, u.email, p.departamenti FROM users u JOIN professors p ON u.id = p.user_id");
+        res.json(results);
+    } catch (err) { res.status(500).json({ Message: err.message }); }
 });
 
-// Rruga për të përditësuar një profesor (përditëson edhe në tabelën users dhe professors)
-// Rruga për përditësimin e profesorit
-app.put('/update-teacher/:id', async (req, res) => {
-    const { id } = req.params;
-    const { emri, mbiemri, email, telefoni, grada, universiteti, adresa } = req.body;
+app.use('/api/enrollments', enrollmentRoutes);
 
-    try {
-        // 1. Përditësojmë të dhënat bazë në tabelën users
-        await sequelize.query(
-            "UPDATE users SET firstname = ?, lastname = ?, email = ? WHERE id = ?",
-            { replacements: [emri, mbiemri, email, id] }
-        );
-
-        // 2. Përditësojmë detajet profesionale në tabelën professors
-        await sequelize.query(
-            "UPDATE professors SET departamenti = ?, telefoni = ?, universiteti = ?, adresa = ? WHERE user_id = ?",
-            { replacements: [grada, telefoni, universiteti, adresa, id] }
-        );
-
-        console.log(`Profesorit me ID ${id} iu përditësuan të dhënat.`);
-        res.json({ Status: "Success" });
-    } catch (err) {
-        console.error("Gabim gjatë UPDATE:", err);
-        res.status(500).json({ Message: "Gabim në server: " + err.message });
-    }
-
-    
-});
-app.post("/semesters/add", async (req, res) => {
-    try {
-        const { emertimi, viti_akademik } = req.body;
-        // Sigurohu që variabla 'Semester' është e definuar më lart
-        const iRi = await Semester.create({ emertimi, viti_akademik });
-        res.status(200).json({ message: "U shtua!", data: iRi });
-    } catch (err) {
-        console.error("Gabim te shtimi i semestrit:", err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.post('/add-course', async (req, res) => {
-    try {
-        const { emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti } = req.body;
-
-        const kursiIRi = await Course.create({
-            emertimi,
-            pershkrimi,
-            kredite,
-            professor_id,
-            semester_id,
-            kapaciteti
-        });
-
-        res.status(200).json({ Status: "Success", Message: "Kursi u shtua me sukses!", data: kursiIRi });
-    } catch (err) {
-        console.error("Gabim te shtimi i kursit:", err);
-        res.status(500).json({ Status: "Error", Message: err.message });
-    }
-});
-
-// A. LEXIMI: Merr të gjitha kurset me të dhënat e profesorit dhe semestrit
-app.get('/get-courses', async (req, res) => {
-    try {
-        const result = await Course.findAll({
-            include: [
-                { model: Professor, attributes: ['id', 'departamenti'] },
-                { model: Semester, attributes: ['id', 'emertimi', 'viti_akademik'] }
-            ],
-            order: [['id', 'DESC']]
-        });
-        res.json(result);
-    } catch (err) {
-        res.status(500).json({ Status: "Error", Message: err.message });
-    }
-});
-
-// B. FSHIRJA: Fshi një kurs
-app.delete('/delete-course/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        await Course.destroy({ where: { id } });
-        res.json({ Status: "Success" });
-    } catch (err) {
-        res.status(500).json({ Status: "Error", Message: err.message });
-    }
-});
-
-// C. PËRDITËSIMI: Ndrysho të dhënat e një kursi
-// Rruga për të përditësuar semestrin
-app.put('/update-semester/:id', async (req, res) => {
-    const id = req.params.id;
-    try {
-        // Përdorim modelin Semester për të gjetur dhe përditësuar të dhënat
-        const updated = await Semester.update(req.body, {
-            where: { id: id }
-        });
-
-        if (updated[0] > 0) {
-            res.json({ Status: "Success", Message: "Semestri u përditësua me sukses" });
-        } else {
-            res.status(404).json({ Error: "Semestri nuk u gjet" });
-        }
-    } catch (err) {
-        console.error("Gabim gjatë update:", err);
-        res.status(500).json({ Error: "Gabim në server" });
-    }
-});
-
-// 1. Rruga për të marrë semestrat (Kjo do të mbushë tabelën tuaj)
-app.get('/get-semesters', async (req, res) => {
-    try {
-        const semesters = await Semester.findAll();
-        res.json(semesters);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 2. Rruga për të shtuar semestër
-app.post('/add-semester', async (req, res) => {
-    try {
-        await Semester.create(req.body);
-        res.json({ message: "Semestri u shtua me sukses" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 3. Rruga për fshirje (Opsionale për CRUD)
-app.delete('/delete-semester/:id', async (req, res) => {
-    try {
-        await Semester.destroy({ where: { id: req.params.id } });
-        res.json({ message: "U fshi" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-app.put('/update-course/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { emertimi, pershkrimi, kredite, professor_id, semester_id, kapaciteti } = req.body;
-
-        const updated = await Course.update({
-            emertimi,
-            pershkrimi,
-            kredite,
-            professor_id,
-            semester_id,
-            kapaciteti
-        }, {
-            where: { id }
-        });
-
-        if (updated[0] > 0) {
-            res.json({ Status: "Success", Message: "Kursi u përditësua me sukses" });
-        } else {
-            res.status(404).json({ Status: "Error", Message: "Kursi nuk u gjet" });
-        }
-    } catch (err) {
-        console.error("Gabim gjatë update të kursit:", err);
-        res.status(500).json({ Status: "Error", Message: err.message });
-    }
-});
-app.listen(5000, () => console.log("Serveri po punon me Sequelize në portin 5000"));
+app.listen(5000, () => console.log("Serveri po punon ne portin 5000"));

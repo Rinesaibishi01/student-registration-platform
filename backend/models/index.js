@@ -9,6 +9,7 @@ const Schedule = require('./Schedule');
 const Department = require('./Department');
 const Announcement = require('./Announcement');
 
+
 // --- LIDHJET (ASSOCIATIONS) ---
 
 // 1. Students & Professors -> Users (One-to-One)
