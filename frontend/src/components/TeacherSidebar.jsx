@@ -16,6 +16,7 @@ function TeacherSidebar() {
     navigate("/");
   };
 
+  
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-[#0f172a] text-white flex flex-col z-[1000] shadow-2xl border-r border-slate-800">
       <div className="p-8 mb-4 flex-none">

@@ -4,7 +4,6 @@ import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import 'sweetalert2/dist/sweetalert2.min.css';
 
-// Funksionet ndihmëse jashtë që të mos kemi gabime renditjeje (ESLint)
 const validateForm = (isLogin, formData) => {
   let tempErrors = {};
   const emailRegex = /\S+@\S+\.\S+/;
@@ -38,7 +37,6 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
     password: ""
   });
 
-  // Rregullimi i state-it dhe zhbllokimi i UI kur hapet modal-i
   useEffect(() => {
     if (isOpen) {
       setIsLogin(initialView === "login");
