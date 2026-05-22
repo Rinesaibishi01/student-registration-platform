@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const Enrollment = require('../models/Enrollment'); // Importojmë modelin që më dërgove pak më parë
+const { Enrollment, Student, Course } = require('../models');
 
-// 1. MARRJA E TË GJITHA REGJISTRIMEVE (GET)
+// 1. MARRJA E TË GJITHA REGJISTRIMEVE
 router.get('/', async (req, res) => {
     try {
         const enrollments = await Enrollment.findAll();
@@ -12,21 +12,41 @@ router.get('/', async (req, res) => {
     }
 });
 
-// 2. REGJISTRIMI I NJË STUDENTI NË LËNDË (POST)
+// 2. MARRJA E REGJISTRIMEVE TË NJË STUDENTI SPECIFIK
+router.get('/my-courses/:student_id', async (req, res) => {
+    try {
+        const enrollments = await Enrollment.findAll({
+            where: { student_id: req.params.student_id }
+        });
+        res.json(enrollments);
+    } catch (err) {
+        res.status(500).json({ Status: "Error", Message: err.message });
+    }
+});
+
+// 3. REGJISTRIMI I NJË STUDENTI NË LËNDË
 router.post('/add', async (req, res) => {
     try {
         const { student_id, course_id } = req.body;
 
-        // Kontrollojmë nëse studenti është regjistruar një herë në këtë lëndë
+        // Kontrollo nëse studenti dhe kursi ekzistojnë
+        const studentExists = await Student.findByPk(student_id);
+        const courseExists = await Course.findByPk(course_id);
+
+        if (!studentExists || !courseExists) {
+            return res.json({ Status: "Error", Message: "Studenti ose Kursi nuk ekziston në sistem!" });
+        }
+
+        // Kontrollo nëse studenti është regjistruar tashmë
         const existingEnrollment = await Enrollment.findOne({
             where: { student_id, course_id }
         });
 
         if (existingEnrollment) {
-            return res.json({ Status: "Exists", Message: "Studenti është i regjistruar tashmë në këtë lëndë!" });
+            return res.json({ Status: "Error", Message: "Studenti është i regjistruar tashmë në këtë lëndë!" });
         }
 
-        // Krijojmë regjistrimin e ri
+        // Krijimi i regjistrimit
         const newEnrollment = await Enrollment.create({
             student_id,
             course_id,
@@ -35,11 +55,12 @@ router.post('/add', async (req, res) => {
 
         res.json({ Status: "Success", Data: newEnrollment });
     } catch (err) {
-        res.status(500).json({ Status: "Error", Message: err.message });
+        console.error("Gabim në server:", err);
+        res.status(500).json({ Status: "Error", Message: "Gabim gjatë regjistrimit në bazën e të dhënave." });
     }
 });
 
-// 3. ANULIMI I NJË REGJISTRIMI (DELETE)
+// 4. ANULIMI I NJË REGJISTRIMI (DELETE)
 router.delete('/drop/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -50,5 +71,4 @@ router.delete('/drop/:id', async (req, res) => {
     }
 });
 
-// 🔴 KJO ISHTE PJESA QË TË MUNGONTE DHE SILLTE GABIMIN:
 module.exports = router;

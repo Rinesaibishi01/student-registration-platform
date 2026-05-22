@@ -6,6 +6,7 @@ const app = express();
 const sequelize = require('./config/db');
 const { User, Student, Enrollment, Professor, Semester, Course } = require('./models'); 
 const enrollmentRoutes = require('./routes/enrollmentRoutes'); 
+const courseRoutes = require('./routes/courseRoutes'); // Shtuar
 
 app.use(cors());
 app.use(express.json());
@@ -561,6 +562,8 @@ app.get('/api/courses-list', async (req, res) => {
     }
 });
 
+// Rrugët e shtuara për Kurset dhe Regjistrimet
 app.use('/api/enrollments', enrollmentRoutes);
+app.use('/api/courses', courseRoutes);
 
 app.listen(5000, () => console.log("Serveri po punon ne portin 5000"));
