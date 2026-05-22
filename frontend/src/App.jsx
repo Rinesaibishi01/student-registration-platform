@@ -10,7 +10,7 @@ import Courses from "./pages/Dashboard/Courses";
 import Semesters from "./pages/Dashboard/Semester";
 import TeacherDashboard from "./pages/Dashboard/TeacherDashboard";
 import Grading from "./pages/Dashboard/Grading";
-
+import LendetMia from "./pages/Dashboard/LendetMia";
 // Komponenti për mbrojtjen e rrugëve
 const ProtectedRoute = ({ children, allowedRole }) => {
   const userRole = localStorage.getItem("role");
@@ -118,6 +118,16 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        {/* RRUGA PËR LËNDËT E MIA */}
+<Route 
+  path="/teacher-courses" 
+  element={
+    <ProtectedRoute allowedRole="professor">
+      <LendetMia />
+    </ProtectedRoute>
+  } 
+/>
+        
 
         {/* 5. CATCH-ALL (Gjithmonë e fundit fare brenda Routes) */}
         <Route path="*" element={<Navigate to="/" />} />

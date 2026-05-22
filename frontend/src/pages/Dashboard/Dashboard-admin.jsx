@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import Sidebar from "../../components/Sidebar";
 
 function Dashboard() {
@@ -8,11 +9,31 @@ function Dashboard() {
   // Marrim emrin e adminit nga localStorage
   const adminName = localStorage.getItem("userName") || "Admin";
 
-  const stats = [
-    { title: "Studentë", count: "1,240", icon: "👨‍🎓", color: "bg-blue-50 text-blue-600" },
-    { title: "Kurse", count: "48", icon: "📘", color: "bg-indigo-50 text-indigo-600" },
-    { title: "Pagesa", count: "12", icon: "💰", color: "bg-emerald-50 text-emerald-600" },
-    { title: "Njoftime", count: "5", icon: "🔔", color: "bg-amber-50 text-amber-600" },
+  // State për të mbajtur statistikat live nga databaza
+  const [liveStats, setLiveStats] = useState({
+    students: 0,
+    courses: 0,
+    enrollments: 0,
+    announcements: 0
+  });
+
+  // useEffect për të marrë të dhënat live sapo hapet faqja
+  useEffect(() => {
+    axios.get("http://localhost:5000/api/dashboard-stats")
+      .then((res) => {
+        setLiveStats(res.data);
+      })
+      .catch((err) => {
+        console.error("Gabim gjatë marrjes së statistikave live:", err);
+      });
+  }, []);
+
+  // Struktura e kartave e lidhur me kërkesat zyrtare të profesorit
+  const statsConfig = [
+    { title: "Studentë", count: liveStats.students, icon: "👨‍🎓", color: "bg-blue-50 text-blue-600" },
+    { title: "Kurse", count: liveStats.courses, icon: "📘", color: "bg-indigo-50 text-indigo-600" },
+    { title: "Regjistrime", count: liveStats.enrollments, icon: "📝", color: "bg-emerald-50 text-emerald-600" },
+    { title: "Njoftime", count: liveStats.announcements, icon: "🔔", color: "bg-amber-50 text-amber-600" },
   ];
 
   return (
@@ -42,7 +63,7 @@ function Dashboard() {
 
         {/* STATS CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-          {stats.map((item, i) => (
+          {statsConfig.map((item, i) => (
             <div key={i} className="bg-white p-8 rounded-[2rem] border border-slate-50 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer">
               <div className={`${item.color} w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform`}>
                 {item.icon}

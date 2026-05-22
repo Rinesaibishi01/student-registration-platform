@@ -7,7 +7,7 @@ function TeacherSidebar() {
 
   const menuItems = [
     { name: "Përmbledhja", path: "/teacher-dashboard", icon: "📊" },
-    { name: "Lëndët e Mia", path: "/my-courses", icon: "📚" },
+    { name: "Lëndët e Mia", path: "/teacher-courses", icon: "📚" },
     { name: "Vlerësimi", path: "/grading", icon: "📝" },
   ];
 
