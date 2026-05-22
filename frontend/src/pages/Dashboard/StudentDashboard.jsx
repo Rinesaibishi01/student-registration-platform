@@ -1,157 +1,104 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import "./StudentDashboard.css";
-import RegisterCourse from './RegisterCourse';
-import Schedule from './Schedule';
-import Messages from './Messages'; // Importimi i faqes së re
 
 function StudentDashboard() {
-  const emri = localStorage.getItem("userName") || "Alyssa";
+  const [activeTab, setActiveTab] = useState("home");
+  const [courses, setCourses] = useState([]);
+  const [myCourses, setMyCourses] = useState([]);
 
-  const [activeTab, setActiveTab] = useState("dashboard");
+  useEffect(() => {
+    // Merr kurset e disponueshme
+    axios.get('http://localhost:5000/api/courses')
+      .then(res => setCourses(res.data))
+      .catch(err => console.error("Gabim në ngarkimin e kurseve:", err));
+  }, []);
 
-  const [myCourses, setMyCourses] = useState([
-    { id: 1, title: "UX Design Foundations", description: "UI/UX Basics" },
-  ]);
-
-  const [courses, setCourses] = useState([
-    { id: 2, title: "Web Development", description: "HTML, CSS, JS" },
-    { id: 3, title: "Data Structures", description: "Algorithms & DS" },
-    { id: 4, title: "Database Systems", description: "SQL & Design" },
-  ]);
-
-  const enroll = (course) => {
-    const exists = myCourses.find((c) => c.id === course.id);
-    if (exists) {
-      alert("Je i regjistruar në këtë kurs!");
-      return;
-    }
-    setMyCourses([...myCourses, course]);
-    alert("U regjistruat me sukses!");
-    setActiveTab("kurset");
+  const fetchMyCourses = () => {
+    axios.get('http://localhost:5000/api/enrollments/my-courses/1')
+      .then(res => setMyCourses(res.data))
+      .catch(err => console.error("Gabim në marrjen e kurseve:", err));
   };
 
-  const unenroll = (id) => {
-    if (window.confirm("A jeni i sigurt që dëshironi të fshini këtë kurs?")) {
-      const updated = myCourses.filter((course) => course.id !== id);
-      setMyCourses(updated);
+  useEffect(() => {
+    if (activeTab === "mycourses") fetchMyCourses();
+  }, [activeTab]);
+
+  const handleEnroll = async (course_id) => {
+    try {
+      const response = await axios.post('http://localhost:5000/api/enrollments/add', {
+        student_id: 1,
+        course_id: course_id
+      });
+
+      if (response.data.Status === "Success") {
+        alert("Regjistrimi u krye me sukses!");
+        fetchMyCourses(); 
+      } else {
+        alert("Mesazh: " + response.data.Message);
+      }
+    } catch (err) {
+      alert("Gabim lidhjeje. Shiko konsolën F12.");
     }
   };
 
-  const deleteFromAvailable = (id) => {
-    setCourses(courses.filter(c => c.id !== id));
+  // Funksion ndihmës për të gjetur emrin e kursit nga ID
+  const getCourseName = (course_id) => {
+    const course = courses.find(c => c.id === course_id);
+    return course ? course.emertimi : "Duke u ngarkuar...";
   };
 
   return (
-    <div className="container">
-
-      {/* SIDEBAR */}
-      <aside className="sidebar">
-        <h2 className="logo">Caplen</h2>
-        <ul className="menu">
-          <li className={activeTab === "dashboard" ? "active" : ""} onClick={() => setActiveTab("dashboard")}>Dashboard</li>
-          <li className={activeTab === "kurset" ? "active" : ""} onClick={() => setActiveTab("kurset")}>Kurset e mia</li>
-          <li className={activeTab === "regjistro" ? "active" : ""} onClick={() => setActiveTab("regjistro")}>Regjistro kursin</li>
-          <li className={activeTab === "oraret" ? "active" : ""} onClick={() => setActiveTab("oraret")}>Oraret</li>
-          
-          {/* SHTUAR: Aktivizimi i Mesazheve */}
-          <li className={activeTab === "mesazhet" ? "active" : ""} onClick={() => setActiveTab("mesazhet")}>Mesazhet</li>
+    <div className="dashboard-layout">
+      <nav className="sidebar">
+        <ul>
+          <li onClick={() => setActiveTab("home")}>Dashboard Home</li>
+          <li onClick={() => setActiveTab("register")}>Regjistrimi</li>
+          <li onClick={() => setActiveTab("mycourses")}>Kurset e Mia</li>
         </ul>
-        <div className="logout">Log out</div>
-      </aside>
-
-      {/* MAIN */}
-      <div className="main">
-        <div className="topbar">
-          <input type="text" placeholder="Kërko për kurse.." className="search" />
-          <div className="icons">🔔 👤</div>
-        </div>
-
-        <div className="hero">
-          <div className="hero-text">
-            <p>Hi, {emri}!</p>
-            <h1>You have {myCourses.length} active courses</h1>
+      </nav>
+      <main className="content">
+        {activeTab === "home" && <h2>Mirë se erdhe, Student!</h2>}
+        
+        {activeTab === "register" && (
+          <div className="table-card">
+            <h2>Kurset e Hapura</h2>
+            <table className="styled-table">
+              <thead><tr><th>ID</th><th>Emri i Kursit</th><th>Veprim</th></tr></thead>
+              <tbody>
+                {courses.map(c => (
+                  <tr key={c.id}>
+                    <td>{c.id}</td>
+                    <td>{c.emertimi}</td>
+                    <td><button className="btn-enroll" onClick={() => handleEnroll(c.id)}>Regjistrohu</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
+        )}
 
-        <div className="content">
-          
-          {/* 1. PAMJA DASHBOARD */}
-          {activeTab === "dashboard" && (
-            <>
-              <div className="left">
-                <h3>Statistics</h3>
-                <div className="stats">
-                  <div className="stat-box"><h2>{myCourses.length}</h2><p>Kurse të regjistruara</p></div>
-                  <div className="stat-box"><h2>3</h2><p>Kurse Aktive</p></div>
-                  <div className="stat-box"><h2>8.5</h2><p>Pikët e Fitura</p></div>
-                </div>
-                <p style={{marginTop: '20px', color: '#666'}}>Mirëseerdhët në panelin tuaj të kontrollit.</p>
-              </div>
-
-              <div className="right">
-                <div className="calendar"><h3>Calendar</h3><input type="date" /></div>
-                <div className="upcoming">
-                  <h4>Orari i shpejtë</h4>
-                  {myCourses.map((course, index) => (
-                    <div className="schedule-card" key={index}>
-                      <div className="time">10:00 - 12:00</div>
-                      <div><strong>{course.title}</strong><p>Lecture</p></div>
-                      <span className="badge">Today</span>
-                    </div>
+        {activeTab === "mycourses" && (
+          <div className="table-card">
+            <h2>Kurset e Mia</h2>
+            {myCourses.length > 0 ? (
+              <table className="styled-table">
+                <thead><tr><th>Emri i Kursit</th><th>Statusi</th></tr></thead>
+                <tbody>
+                  {myCourses.map(en => (
+                    <tr key={en.id}>
+                      <td>{getCourseName(en.course_id)}</td>
+                      <td><span className="badge">{en.statusi}</span></td>
+                    </tr>
                   ))}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* 2. PAMJA KURSET E MIA */}
-          {activeTab === "kurset" && (
-            <div className="left" style={{ width: "100%" }}>
-              <h3>Kurset e mia</h3>
-              <div className="course-grid">
-                {myCourses.length > 0 ? myCourses.map((course) => (
-                  <div className="course-card" key={course.id}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <h4>{course.title}</h4>
-                      <button 
-                        onClick={() => unenroll(course.id)} 
-                        style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer', fontWeight: 'bold' }}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <p>{course.description}</p>
-                    <div className="course-footer">
-                      <span>Progress</span>
-                      <div className="progress-bar"><div className="progress" style={{ width: "60%" }}></div></div>
-                    </div>
-                  </div>
-                )) : <p>Nuk keni kurse të regjistruara.</p>}
-              </div>
-            </div>
-          )}
-
-          {/* 3. PAMJA REGJISTRO KURSIN */}
-          {activeTab === "regjistro" && (
-            <RegisterCourse 
-              availableCourses={courses} 
-              onEnroll={enroll} 
-              onDelete={deleteFromAvailable}
-            />
-          )}
-
-          {/* 4. PAMJA ORARET */}
-          {activeTab === "oraret" && (
-            <Schedule myCourses={myCourses} />
-          )}
-
-          {/* 5. SHTUAR: PAMJA MESAZHET */}
-          {activeTab === "mesazhet" && (
-            <Messages />
-          )}
-
-        </div>
-      </div>
+                </tbody>
+              </table>
+            ) : (
+              <p>Nuk jeni regjistruar ende në asnjë kurs.</p>
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

@@ -17,11 +17,13 @@ const RegisterCourse = ({ availableCourses, onEnroll }) => {
             boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
           }}>
             <div>
-              <h4 style={{ margin: 0 }}>{course.title}</h4>
-              <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>{course.description}</p>
+              {/* Ndryshuar nga course.title në course.emertimi */}
+              <h4 style={{ margin: 0 }}>{course.emertimi}</h4>
+              {/* Ndryshuar nga course.description në course.pershkrimi */}
+              <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>{course.pershkrimi}</p>
             </div>
             <button 
-              onClick={() => onEnroll(course)}
+              onClick={() => onEnroll(course)} // Kjo dërgon të gjithë objektin e kursit
               style={{
                 backgroundColor: '#4A47E0',
                 color: 'white',

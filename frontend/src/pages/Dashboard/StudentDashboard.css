@@ -1,255 +1,30 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* Stili bazë */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f8f9fa; }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Inter', sans-serif;
-}
+.dashboard-layout { display: flex; min-height: 100vh; }
 
-body {
-  background: #f8fafc;
-  color: #0f172a;
-}
+/* Sidebar - Ngjyra e errët si në foto */
+.sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; }
+.sidebar ul { list-style: none; margin-top: 20px; }
+.sidebar li { padding: 15px; cursor: pointer; transition: 0.3s; }
+.sidebar li:hover { background: #34495e; }
 
-/* LAYOUT */
-.container {
-  display: flex;
-  height: 100vh;
-}
+/* Përmbajtja Kryesore */
+.content { flex: 1; padding: 30px; }
 
-/* SIDEBAR (clean minimal) */
-.sidebar {
-  width: 250px;
-  background: #ffffff;
-  border-right: 1px solid #e2e8f0;
-  padding: 25px 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
+/* Stat-et (Kartonat e statistikave) */
+.stats-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; }
+.stat-card { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.stat-card h3 { font-size: 14px; color: #666; margin-bottom: 10px; }
+.stat-card p { font-size: 24px; font-weight: bold; }
 
-.logo {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 30px;
-}
+/* Kartat për njoftime dhe tabela */
+.notification-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-top: 20px; }
+.table-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
-/* MENU */
-.menu {
-  list-style: none;
-}
-
-.menu li {
-  padding: 12px 16px;
-  margin-bottom: 10px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: 0.25s ease;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.menu li:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-}
-
-.menu li.active {
-  background: #0f172a;
-  color: white;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.15);
-}
-
-/* LOGOUT */
-.logout {
-  padding: 12px;
-  border-radius: 12px;
-  background: #f1f5f9;
-  text-align: center;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.logout:hover {
-  background: #e2e8f0;
-}
-
-/* MAIN */
-.main {
-  flex: 1;
-  padding: 30px;
-  overflow-y: auto;
-}
-
-/* TOPBAR */
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-}
-
-.search {
-  padding: 12px 16px;
-  border-radius: 999px;
-  border: none;
-  width: 260px;
-  background: #f1f5f9;
-  outline: none;
-  transition: 0.3s;
-}
-
-.search:focus {
-  background: #e2e8f0;
-}
-
-.icons {
-  font-size: 20px;
-}
-
-/* HERO (premium card) */
-.hero {
-  background: white;
-  padding: 30px;
-  border-radius: 24px;
-  margin-bottom: 25px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.05);
-}
-
-.hero p {
-  color: #64748b;
-  margin-bottom: 5px;
-}
-
-.hero h1 {
-  font-size: 26px;
-  font-weight: 700;
-}
-
-/* CONTENT */
-.content {
-  display: flex;
-  gap: 25px;
-}
-
-.left {
-  flex: 2;
-}
-
-.right {
-  flex: 1;
-}
-
-/* STATS */
-.stats {
-  display: flex;
-  gap: 15px;
-  margin-top: 15px;
-}
-
-.stat-box {
-  flex: 1;
-  background: white;
-  padding: 20px;
-  border-radius: 20px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.04);
-  transition: 0.3s;
-}
-
-.stat-box:hover {
-  transform: translateY(-4px);
-}
-
-.stat-box h2 {
-  font-size: 22px;
-  font-weight: 700;
-}
-
-/* CARDS RIGHT SIDE */
-.calendar,
-.upcoming {
-  background: white;
-  padding: 18px;
-  border-radius: 20px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.04);
-  margin-bottom: 20px;
-}
-
-/* SCHEDULE */
-.schedule-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 10px;
-  padding: 12px;
-  border-radius: 14px;
-  background: #f8fafc;
-}
-
-.time {
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-.badge {
-  background: #0f172a;
-  color: white;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-}
-
-/* COURSES */
-.course-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 18px;
-  margin-top: 20px;
-}
-
-.course-card {
-  background: white;
-  padding: 18px;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-  transition: 0.3s;
-}
-
-.course-card:hover {
-  transform: translateY(-6px);
-}
-
-.course-card h4 {
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-/* PROGRESS */
-.course-footer {
-  margin-top: 12px;
-}
-
-.progress-bar {
-  height: 6px;
-  background: #e2e8f0;
-  border-radius: 999px;
-  margin-top: 6px;
-}
-
-.progress {
-  height: 100%;
-  background: #0f172a;
-  border-radius: 999px;
-}
-
-/* RESPONSIVE */
-@media (max-width: 900px) {
-  .content {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    display: none;
-  }
-}
+/* Stili i tabelës */
+table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+th, td { padding: 15px; border-bottom: 1px solid #eee; text-align: left; }
+button { padding: 8px 16px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; }
+button:hover { background: #2980b9; }
