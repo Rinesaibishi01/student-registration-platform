@@ -471,26 +471,94 @@ app.get('/api/professor/:id/courses', async (req, res) => {
         return res.status(500).json({ Status: "Error", Message: err.message });
     }
 });
-app.get('/get-grades', (req, res) => {
-    // Përdorim tabelën 'enrollments' sepse 'grades' nuk ekziston te fotoja jote
-    const sql = `
-        SELECT 
-            students.firstname, 
-            students.lastname, 
-            courses.name as course, 
-            enrollments.grade 
-        FROM enrollments 
-        JOIN students ON enrollments.student_id = students.id 
-        JOIN courses ON enrollments.course_id = courses.id
-    `;
-    
-    db.query(sql, (err, result) => {
-        if (err) {
-            console.error("Gabim në SQL:", err);
-            return res.json({ Error: "Gabim në leximin e të dhënave nga enrollments" });
+app.get('/api/professor/:id/grading-students', async (req, res) => {
+    // Kjo merr ID-në që vjen nga frontendi (p.sh. 20 ose 3)
+    const loggedInUserId = req.params.id; 
+
+    try {
+        // Query i thjeshtuar dhe i saktë që lidh direkt lëndët me profesorin dhe përdoruesit
+        const [studentet] = await sequelize.query(`
+            SELECT 
+                e.student_id,
+                c.emertimi AS course_title,
+                e.data_regjistrimit,
+                e.statusi,
+                u.firstname AS student_name,
+                u.lastname AS student_lastname
+            FROM enrollments e
+            JOIN courses c ON e.course_id = c.id
+            JOIN students s ON e.student_id = s.id
+            JOIN users u ON s.user_id = u.id
+            WHERE c.professor_id = 3 OR c.professor_id = ?
+        `, { replacements: [loggedInUserId] });
+
+        return res.json(studentet);
+
+    } catch (err) {
+        console.error("Gabim në server:", err);
+        return res.status(500).json({ Status: "Error", Message: err.message });
+    }
+});
+// Endpoint për regjistrimin e lëndës nga studenti
+app.post('/api/student/register-course', async (req, res) => {
+    const { student_user_id, course_id } = req.body;
+
+    try {
+        // 1. Kontrollojmë nëse ky user ekziston te tabela 'students', nëse jo e shtojmë
+        let [student] = await sequelize.query(
+            'SELECT id FROM students WHERE user_id = ? LIMIT 1',
+            { replacements: [student_user_id] }
+        );
+
+        let studentId;
+        if (student.length === 0) {
+            // Nëse nuk ekziston në tabelën students, e krijojmë rreshtin e ri
+            const [result] = await sequelize.query(
+                'INSERT INTO students (user_id, createdAt, updatedAt) VALUES (?, NOW(), NOW())',
+                { replacements: [student_user_id] }
+            );
+            studentId = result;
+        } else {
+            studentId = student[0].id;
         }
-        return res.json({ Status: "Success", Data: result });
-    });
+
+        // 2. Kontrollojmë nëse është i regjistruar tashmë në këtë lëndë
+        const [existing] = await sequelize.query(
+            'SELECT id FROM enrollments WHERE student_id = ? AND course_id = ?',
+            { replacements: [studentId, course_id] }
+        );
+
+        if (existing.length > 0) {
+            return res.status(400).json({ Message: "Ju jeni të regjistruar në këtë lëndë!" });
+        }
+
+        // 3. E regjistrojmë në lëndë
+        await sequelize.query(
+            'INSERT INTO enrollments (student_id, course_id, data_regjistrimit, statusi) VALUES (?, ?, NOW(), ?)',
+            { replacements: [studentId, course_id, 'Aktiv'] }
+        );
+
+        return res.json({ Status: "Success", Message: "U regjistruat me sukses!" });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ Error: err.message });
+    }
+});
+
+// Endpoint për të marrë të gjitha lëndët që studenti t'i shohë në panelin e tij
+app.get('/api/courses-list', async (req, res) => {
+    try {
+        const [courses] = await sequelize.query(`
+            SELECT c.id, c.emertimi, c.pershkrimi, u.firstname AS professor_name, u.lastname AS professor_lastname 
+            FROM courses c
+            JOIN professors p ON c.professor_id = p.id
+            JOIN users u ON p.user_id = u.id
+        `);
+        res.json(courses);
+    } catch (err) {
+        res.status(500).json({ Error: err.message });
+    }
 });
 
 app.use('/api/enrollments', enrollmentRoutes);
