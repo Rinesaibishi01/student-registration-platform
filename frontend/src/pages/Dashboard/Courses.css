@@ -1,0 +1,32 @@
+/* Courses.css */
+.courses-container {
+    padding: 2rem;
+    margin-left: 16rem; /* Për të lënë hapësirë për Sidebar */
+    min-height: 100vh;
+    background-color: #f9fafb;
+}
+
+.form-wrapper {
+    max-width: 56rem;
+    margin: 0 auto 3rem auto;
+    background: white;
+    padding: 2.5rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.table-wrapper {
+    max-width: 64rem;
+    margin: 0 auto;
+    background: white;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.action-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.75rem;
+    transition: all 0.3s;
+    font-weight: 500;
+}

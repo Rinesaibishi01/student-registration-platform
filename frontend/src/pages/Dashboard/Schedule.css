@@ -1,0 +1,94 @@
+.schedule-wrapper {
+    padding: 10px;
+}
+
+.schedule-container {
+    display: flex;
+    gap: 30px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.schedule-col {
+    flex: 2;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.notify-col {
+    flex: 1;
+    min-width: 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Kartela e Orarit */
+.schedule-card {
+    background: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.time-slot {
+    background: #edf2f7;
+    color: #2b6cb0;
+    font-weight: 700;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.schedule-details {
+    flex: 1;
+}
+
+.room-text {
+    margin: 4px 0 0 0;
+    font-size: 13px;
+    color: #718096;
+}
+
+/* Badge për Ditën */
+.badge-day {
+    background: #e2e8f0;
+    color: #4a5568;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+/* Njoftimet */
+.notify-item {
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.notify-info {
+    background: #ebf8ff;
+    border-color: #3182ce;
+    color: #2b6cb0;
+}
+
+.notify-warning {
+    background: #fffaf0;
+    border-color: #dd6b20;
+    color: #dd6b20;
+}
+
+.no-schedule {
+    color: #a0aec0;
+    font-style: italic;
+}

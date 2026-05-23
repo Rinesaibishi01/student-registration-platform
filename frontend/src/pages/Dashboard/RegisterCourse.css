@@ -1,0 +1,138 @@
+/* Kontenitori Kryesor */
+.register-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Lista e Kurseve (Grid Layout) */
+.course-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* Kartela e çdo Kursi */
+.course-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.course-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Detajet brenda kartelës */
+.course-details h4 {
+    margin: 0 0 8px 0;
+    color: #1a202c;
+}
+
+.course-details p {
+    color: #4a5568;
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+/* Badges (Etiketat) */
+.course-meta {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.badge-kredite {
+    background-color: #ebf8ff;
+    color: #2b6cb0;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-prof {
+    background-color: #f7fafc;
+    color: #4a5568;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    border: 1px solid #edf2f7;
+}
+
+/* Pjesa e Kapacitetit */
+.capacity-info {
+    border-top: 1px solid #edf2f7;
+    padding-top: 10px;
+    margin-bottom: 15px;
+}
+
+/* Butonat */
+.btn-enroll {
+    width: 100%;
+    padding: 10px;
+    background-color: #3182ce;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-enroll:hover {
+    background-color: #2b6cb0;
+}
+
+/* Butoni kur lënda është plot (Kthehet në ngjyrë portokalli për Listë Pritjeje) */
+.btn-waiting {
+    background-color: #dd6b20;
+}
+
+.btn-waiting:hover {
+    background-color: #c05621;
+}
+
+/* Mesazhet e njoftimeve (Alerts) në krye të faqes */
+.alert-message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.alert-message.success {
+    background-color: #f0fff4;
+    color: #38a169;
+    border: 1px solid #c6f6d5;
+}
+
+.alert-message.warning {
+    background-color: #fffaf0;
+    color: #dd6b20;
+    border: 1px solid #feebc8;
+}
+
+.alert-message.error {
+    background-color: #fff5f5;
+    color: #e53e3e;
+    border: 1px solid #fed7d7;
+}
+
+.loading {
+    text-align: center;
+    font-size: 18px;
+    color: #718096;
+    margin-top: 40px;
+}

@@ -1,44 +1,95 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import Sidebar from '../../components/Sidebar'; // Importojmë Sidebar-in që të jetë pjesë e faqes
+import './Schedule.css'; // Importojmë CSS-in
 
-const Schedule = ({ myCourses }) => {
-  // Njoftime provizore
-  const notifications = [
-    { id: 1, text: "Ligjërata e UX Design fillon pas 15 minutave.", type: "warning" },
-    { id: 2, text: "Keni një detyrë të re në Web Development.", type: "info" }
+const Schedule = () => {
+  const [schedules, setSchedules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Marrim ID-në e studentit të kyçur nga localStorage
+  const studentId = localStorage.getItem("studentId") || localStorage.getItem("userId") || 1;
+
+  useEffect(() => {
+    if (studentId) {
+      fetch(`http://localhost:5000/api/enrollments/my-schedule/${studentId}`)
+        .then(res => res.json())
+        .then(data => {
+          setSchedules(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Gabim gjatë marrjes së orarit:", err);
+          setLoading(false);
+        });
+    }
+  }, [studentId]);
+
+  // Njoftime të shpejta simuluese
+  const quickNotifications = [
+    { id: 1, text: "Sistemi i orareve është përditësuar me databazën zyrtare.", type: "info" },
+    { id: 2, text: "Gjithmonë kontrolloni sallën përpara se të niseni në fakultet.", type: "warning" }
   ];
 
-  return (
-    <div style={{ padding: '20px', width: '100%' }}>
-      <h2>Oraret dhe Njoftimet</h2>
-
-      <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-        
-        {/* Kolona e Orareve */}
-        <div style={{ flex: 2 }}>
-          <h3>Oraret e Kurseve</h3>
-          {myCourses.map((course, index) => (
-            <div key={index} className="schedule-card" style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', padding: '15px', borderRadius: '10px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-              <div className="time" style={{ fontWeight: 'bold', color: '#4A47E0' }}>10:00 - 12:00</div>
-              <div>
-                <strong>{course.title}</strong>
-                <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>Salla 102 - Ligjëratë</p>
-              </div>
-              <span className="badge" style={{ background: '#E0E0FF', color: '#4A47E0', padding: '5px 10px', borderRadius: '5px', fontSize: '12px' }}>Today</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Kolona e Njoftimeve */}
-        <div style={{ flex: 1 }}>
-          <h3>Njoftimet</h3>
-          {notifications.map(note => (
-            <div key={note.id} style={{ padding: '15px', background: note.type === 'warning' ? '#FFF4E5' : '#E5F6FD', borderRadius: '8px', marginBottom: '10px', borderLeft: `5px solid ${note.type === 'warning' ? '#FFA117' : '#03A9F4'}` }}>
-              <p style={{ margin: 0, fontSize: '14px' }}>{note.text}</p>
-            </div>
-          ))}
-        </div>
-
+  if (loading) {
+    return (
+      <div className="dashboard-layout">
+        <Sidebar />
+        <main className="main-content">
+          <div className="loading">Duke ngarkuar orarin javor...</div>
+        </main>
       </div>
+    );
+  }
+
+  return (
+    <div className="dashboard-layout">
+      {/* Menuja Anësore */}
+      <Sidebar />
+
+      {/* Përmbajtja Kryesore e Orarit */}
+      <main className="main-content">
+        <div className="schedule-wrapper">
+          <h2>Oraret Akademike dhe Kujtesat</h2>
+
+          <div className="schedule-container">
+            {/* Kolona e Orareve Dinamike */}
+            <div className="schedule-col">
+              <h3>Orari Im Javor (Lëndët e Regjistruara)</h3>
+              
+              {schedules.length === 0 ? (
+                <p className="no-schedule">Nuk u gjet asnjë orar. Sigurohuni që jeni regjistruar në lëndë!</p>
+              ) : (
+                schedules.map((item) => (
+                  <div key={item.id} className="schedule-card">
+                    {/* Formatizimi i Orës */}
+                    <div className="time-slot">
+                      {item.ora_fillimit.substring(0, 5)} - {item.ora_mbarimit.substring(0, 5)}
+                    </div>
+                    
+                    <div className="schedule-details">
+                      <strong>{item.Course?.emertimi}</strong>
+                      <p className="room-text">🏫 Salla: {item.salla || "Pa përcaktuar"}</p>
+                    </div>
+                    
+                    {/* Shfaq dita si Badge (p.sh: E Hënë, E Martë) */}
+                    <span className="badge-day">{item.dita}</span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Kolona e Njoftimeve / Kujtesave */}
+            <div className="notify-col">
+              <h3>Kujtesa të Shpejta</h3>
+              {quickNotifications.map(note => (
+                <div key={note.id} className={`notify-item ${note.type === 'warning' ? 'notify-warning' : 'notify-info'}`}>
+                  <p style={{ margin: 0, fontSize: '14px' }}>{note.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 };

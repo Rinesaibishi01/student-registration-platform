@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Sidebar from "../../components/Sidebar";
+import './Courses.css'; 
 
 const Courses = () => {
   const [courseData, setCourseData] = useState({
@@ -13,8 +14,8 @@ const Courses = () => {
   });
 
   const [courses, setCourses] = useState([]);
-  const [isEditing, setIsEditing] = useState(false); // State për të ditur nëse po editojmë
-  const [editId, setEditId] = useState(null); // ID e kursit që po editojmë
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState(null);
 
   const fetchCourses = async () => {
     try {
@@ -34,7 +35,6 @@ const Courses = () => {
     setCourseData({ ...courseData, [name]: value });
   };
 
-  // Funksioni që mbush formën për editim
   const handleEdit = (course) => {
     setIsEditing(true);
     setEditId(course.id);
@@ -46,7 +46,7 @@ const Courses = () => {
       semester_id: course.semester_id,
       kapaciteti: course.kapaciteti
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // Te dërgon lart te forma
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSubmit = async (e) => {
@@ -61,16 +61,13 @@ const Courses = () => {
 
     try {
       if (isEditing) {
-        // UPDATE (PUT)
         await axios.put(`http://localhost:5000/update-course/${editId}`, dataToSend);
         alert("✅ Kursi u përditësua!");
       } else {
-        // CREATE (POST)
         await axios.post("http://localhost:5000/add-course", dataToSend);
         alert("✅ Kursi u shtua!");
       }
       
-      // Resetimi i formës
       setIsEditing(false);
       setEditId(null);
       setCourseData({ emertimi: "", pershkrimi: "", kredite: "", professor_id: "", semester_id: "", kapaciteti: "" });
@@ -81,7 +78,7 @@ const Courses = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("A jeni të sigurt?")) {
+    if (window.confirm("A jeni të sigurt që doni ta fshini këtë kurs?")) {
       try {
         await axios.delete(`http://localhost:5000/delete-course/${id}`);
         fetchCourses();
@@ -92,7 +89,7 @@ const Courses = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 font-sans text-gray-900">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <main className="flex-1 p-8 ml-64">
         <div className="mb-10 text-center lg:text-left">
@@ -100,8 +97,7 @@ const Courses = () => {
           <p className="text-gray-500 mt-2 text-lg">{isEditing ? "Po editoni kursin..." : "Shtoni kurse të reja në sistem."}</p>
         </div>
 
-        {/* FORM SECTION */}
-        <div className={`max-w-4xl mx-auto bg-white p-10 rounded-3xl shadow-xl border transition-all ${isEditing ? 'border-yellow-400' : 'border-gray-100'} mb-12`}>
+        <div className={`form-wrapper max-w-4xl mx-auto bg-white p-10 rounded-3xl shadow-xl border mb-12 ${isEditing ? 'border-yellow-400' : 'border-gray-100'}`}>
           <h2 className="text-2xl font-bold text-gray-800 mb-8">{isEditing ? "Ndrysho Detajet" : "Shto Kurs të Ri"}</h2>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -120,7 +116,7 @@ const Courses = () => {
             </div>
             
             <div className="flex gap-4">
-               <button type="submit" className={`flex-1 ${isEditing ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-indigo-600 hover:bg-indigo-700'} text-white font-black py-4 rounded-2xl shadow-lg transition-all uppercase tracking-widest cursor-pointer`}>
+              <button type="submit" className={`flex-1 ${isEditing ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-indigo-600 hover:bg-indigo-700'} text-white font-black py-4 rounded-2xl shadow-lg transition-all uppercase tracking-widest`}>
                 {isEditing ? "Përditëso Kursin" : "Ruaj Kursin në Sistem"}
               </button>
               {isEditing && (
@@ -130,8 +126,7 @@ const Courses = () => {
           </form>
         </div>
 
-        {/* TABLE SECTION */}
-        <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+        <div className="table-wrapper max-w-5xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
           <table className="w-full text-left border-collapse">
             <thead className="bg-gray-100 text-gray-600">
               <tr>
@@ -146,12 +141,8 @@ const Courses = () => {
                   <td className="p-4 font-medium">{course.emertimi}</td>
                   <td className="p-4">{course.kredite} ECTS</td>
                   <td className="p-4 text-center space-x-2">
-                    <button onClick={() => handleEdit(course)} className="bg-yellow-100 text-yellow-600 px-4 py-2 rounded-xl hover:bg-yellow-600 hover:text-white transition-all">
-                      Edit
-                    </button>
-                    <button onClick={() => handleDelete(course.id)} className="bg-red-100 text-red-600 px-4 py-2 rounded-xl hover:bg-red-600 hover:text-white transition-all">
-                      Fshij
-                    </button>
+                    <button onClick={() => handleEdit(course)} className="bg-yellow-100 text-yellow-600 px-4 py-2 rounded-xl hover:bg-yellow-600 hover:text-white transition-all">Edit</button>
+                    <button onClick={() => handleDelete(course.id)} className="bg-red-100 text-red-600 px-4 py-2 rounded-xl hover:bg-red-600 hover:text-white transition-all">Fshij</button>
                   </td>
                 </tr>
               ))}
