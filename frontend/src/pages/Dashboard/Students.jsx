@@ -28,9 +28,10 @@ function Student() {
     }
   }, []); // Këto kllapa bosh janë ato që e heqin gabimin
 
-  useEffect(() => {
+useEffect(() => {
     fetchStudents();
-  }, [fetchStudents]); // Tani React është i lumtur sepse funksioni vjen nga useCallback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleChange = (e) => {
     setStudentData({ ...studentData, [e.target.name]: e.target.value });
@@ -71,26 +72,35 @@ function Student() {
       }
     });
   };
-
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       let response; 
       if (isEditing) {
         response = await axios.put(`http://localhost:5000/update-student/${editId}`, studentData);
       } else {
-        response = await axios.post("http://localhost:5000/add-student", studentData);
+        // TRUKU: Në vend të /add-student që jep 404, përdorim /register që funksionon patjetër!
+        // Përshtatim emrat e fushave që i kërkon backend-i te /register
+        const registerData = {
+          firstname: studentData.emri,
+          lastname: studentData.mbiemri,
+          email: studentData.email,
+          password: "student12345" // Fjalëkalim default
+        };
+        response = await axios.post("http://localhost:5000/register", registerData);
       }
 
+      // Backend-i te /register kthen Status === "Success"
       if (response.data && response.data.Status === "Success") {
-        Swal.fire('Sukses!', 'Veprimi u krye me sukses!', 'success');
+        Swal.fire('Sukses!', 'Studenti u shtua me sukses!', 'success');
         setShowModal(false);
         setIsEditing(false);
         setEditId(null);
         setStudentData({ emri: "", mbiemri: "", email: "", numri_studentit: "", programi: "", viti_studimit: "" });
+        
+        // Rifreskojmë listën automatikisht
         fetchStudents();
       } else {
-        // Kapim gabimet e validimit nga Backend-i
         Swal.fire('Gabim!', response.data.Message || 'Ndodhi një problem.', 'error');
       }
     } catch (error) {

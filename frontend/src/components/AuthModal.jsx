@@ -26,7 +26,8 @@ const validateForm = (isLogin, formData) => {
 };
 
 function AuthModal({ isOpen, onClose, initialView = "login" }) {
-  const [isLogin, setIsLogin] = useState(true);
+  // RREGULLIMI KRYESOR: Vlera fillestare vendoset direkt këtu në bazë të prop-it
+  const [isLogin, setIsLogin] = useState(initialView === "login");
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   
@@ -37,17 +38,23 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
     password: ""
   });
 
+  // Sinkronizimi i pamjes kur modali hapet apo ndryshon prop-i, pa shkaktuar loop
+  useEffect(() => {
+    setIsLogin(initialView === "login");
+  }, [initialView]);
+
+  // useEffect për menaxhimin e efekteve të jashtme (DOM) kur hapet modali
   useEffect(() => {
     if (isOpen) {
-      setIsLogin(initialView === "login");
       setErrors({});
+
       const root = document.getElementById('root');
       if (root) {
         root.removeAttribute('aria-hidden');
         root.style.pointerEvents = 'auto';
       }
     }
-  }, [isOpen, initialView]);
+  }, [isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -72,12 +79,13 @@ function AuthModal({ isOpen, onClose, initialView = "login" }) {
           if (res.data.role === 'admin') navigate("/Dashboard-admin");
           else if (res.data.role === 'professor') navigate("/teacher-dashboard");
           else navigate("/student-panel");
-        } else {
+        } 
+        else {
           setIsLogin(true);
           setFormData(prev => ({ ...prev, password: "" })); 
           Swal.fire({
             title: 'Sukses!',
-            text: 'Llogaria u krijua, tani mund të kyçeni.',
+            text: 'Llogaria u krijua, Studenti u Regjistrua.',
             icon: 'success',
             confirmButtonColor: '#6366f1'
           });

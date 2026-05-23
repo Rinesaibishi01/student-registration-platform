@@ -109,6 +109,7 @@ const Courses = () => {
                 <label className="block text-sm font-bold text-gray-700 mb-2">Përshkrimi</label>
                 <textarea name="pershkrimi" rows="2" className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500" value={courseData.pershkrimi} onChange={handleChange} />
               </div>
+              
               <input type="number" name="kredite" placeholder="Kredite" className="p-4 bg-gray-50 border rounded-2xl" value={courseData.kredite} onChange={handleChange} />
               <input type="number" name="kapaciteti" placeholder="Kapaciteti" className="p-4 bg-gray-50 border rounded-2xl" value={courseData.kapaciteti} onChange={handleChange} />
               <input type="number" name="professor_id" placeholder="ID e Profesorit" className="p-4 bg-gray-50 border rounded-2xl" value={courseData.professor_id} onChange={handleChange} />

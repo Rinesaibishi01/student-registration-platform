@@ -1,3 +1,4 @@
+
 const express = require('express');
 const mysql = require('mysql');
 const cors = require('cors');
@@ -76,3 +77,4 @@ app.get('/api/announcements', (req, res) => {
 });
 
 app.listen(5000, () => console.log("Serveri po punon ne portin 5000"));
+

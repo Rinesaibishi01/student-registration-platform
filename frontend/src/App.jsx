@@ -10,19 +10,27 @@ import Courses from "./pages/Dashboard/Courses";
 import Semesters from "./pages/Dashboard/Semester";
 import TeacherDashboard from "./pages/Dashboard/TeacherDashboard";
 import Grading from "./pages/Dashboard/Grading";
+import LendetMia from "./pages/Dashboard/LendetMia";
 
-// Komponenti për mbrojtjen e rrugëve
+// Importet e skedarëve për Dashboard-in e Profesorit
+import CreateAnnouncement from "./pages/Dashboard/CreateAnnouncement";
+import ProfessorSchedule from "./pages/Dashboard/ProfessorSchedule";
+
+// Importi i ri për shtimin e orarit nga Admini
+import AddSchedule from "./pages/Dashboard/AddSchedule";
+
+// Komponenti i përmirësuar për mbrojtjen e rrugëve
 const ProtectedRoute = ({ children, allowedRole }) => {
   const userRole = localStorage.getItem("role");
   
-  console.log("Mbrojtja: Roli i lejuar:", allowedRole, "Roli në memorje:", userRole);
+  console.log("Mbrojtja - Roli i kërkuar:", allowedRole, "| Roli aktual:", userRole);
 
   if (!userRole) {
-    return <Navigate to="/" />;
+    return <Navigate to="/" replace />;
   }
 
   if (allowedRole && userRole.toLowerCase().trim() !== allowedRole.toLowerCase().trim()) {
-    return <Navigate to="/" />;
+    return <Navigate to="/" replace />;
   }
 
   return children;
@@ -37,7 +45,7 @@ function App() {
 
         {/* 2. RRUGËT E ADMINIT */}
         <Route 
-          path="/Dashboard-admin" 
+          path="/dashboard-admin" 
           element={
             <ProtectedRoute allowedRole="admin">
               <DashboardAdmin />
@@ -82,10 +90,20 @@ function App() {
         />
 
         <Route 
-          path="/Semesters" 
+          path="/semesters" 
           element={
             <ProtectedRoute allowedRole="admin">
               <Semesters />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* RRUGA E RE PËR SHTIMIN E ORARIT NGA ADMINI */}
+        <Route 
+          path="/add-schedule" 
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AddSchedule />
             </ProtectedRoute>
           } 
         />
@@ -119,8 +137,35 @@ function App() {
           } 
         />
 
-        {/* 5. CATCH-ALL (Gjithmonë e fundit fare brenda Routes) */}
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route 
+          path="/teacher-courses" 
+          element={
+            <ProtectedRoute allowedRole="professor">
+              <LendetMia />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/create-announcement" 
+          element={
+            <ProtectedRoute allowedRole="professor">
+              <CreateAnnouncement />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/professor-schedule" 
+          element={
+            <ProtectedRoute allowedRole="professor">
+              <ProfessorSchedule />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* 5. CATCH-ALL */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

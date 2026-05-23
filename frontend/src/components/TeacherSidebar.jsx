@@ -5,10 +5,13 @@ function TeacherSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Masivi i përditësuar me dy faqet e reja
   const menuItems = [
     { name: "Përmbledhja", path: "/teacher-dashboard", icon: "📊" },
-    { name: "Lëndët e Mia", path: "/my-courses", icon: "📚" },
+    { name: "Lëndët e Mia", path: "/teacher-courses", icon: "📚" },
     { name: "Vlerësimi", path: "/grading", icon: "📝" },
+    { name: "Krijo Njoftim", path: "/create-announcement", icon: "📢" },
+    { name: "Orari im", path: "/professor-schedule", icon: "📅" },
   ];
 
   const handleLogout = () => {
@@ -16,7 +19,6 @@ function TeacherSidebar() {
     navigate("/");
   };
 
-  
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-[#0f172a] text-white flex flex-col z-[1000] shadow-2xl border-r border-slate-800">
       <div className="p-8 mb-4 flex-none">
