@@ -561,7 +561,87 @@ app.get('/api/courses-list', async (req, res) => {
         res.status(500).json({ Error: err.message });
     }
 });
+// ========================================================
+// 1. ENDPOINT PËR TË MARRË ORARIN E PROFESORIT
+// ========================================================
+// Endpoint për të marrë orarin e ligjëratave për profesorin specifik
+app.get('/api/professor/:id/schedules', async (req, res) => {
+    const professorId = req.params.id; // Merr ID-në 20 nga URL-ja
+    
+    try {
+        // Query i saktë që lidh lëndët e profesorit me tabelën e orarit 'schedules'
+        const [orari] = await sequelize.query(`
+            SELECT s.course_id, s.dita, s.ora_fillimit, s.ora_mbarimit, s.salla 
+            FROM schedules s
+            JOIN courses c ON s.course_id = c.id
+            WHERE c.professor_id = ?
+        `, { replacements: [professorId] });
 
+        // Dërgojmë orarin e gjetur te frontend-i
+        res.json(orari);
+    } catch (err) {
+        console.error("Gabim gjatë marrjes së orarit:", err);
+        res.status(500).json({ Error: "Gabim në server: " + err.message });
+    }
+});
+
+// ========================================================
+// 2. ENDPOINT PËR TË RUAJTUR NJOFTIMIN E RI
+// ========================================================
+app.post('/api/professor/announcements', async (req, res) => {
+    const { title, content } = req.body; // Këto vijnë nga frontend-i (inputet)
+
+    if (!title || !content) {
+        return res.status(400).json({ Error: "Titulli dhe përmbajtja janë të detyrueshme!" });
+    }
+
+    try {
+        // Query i saktë që përdor vetëm kolonat e tabelës tënde në MySQL:
+        // titulli, permbajtja, data_postimit
+        await sequelize.query(`
+            INSERT INTO announcements (titulli, permbajtja, data_postimit, course_id) 
+            VALUES (?, ?, NOW(), NULL)
+        `, { replacements: [title, content] });
+
+        res.json({ Message: "Njoftimi u publikua me sukses!" });
+    } catch (err) {
+        console.error("Gabim në server gjatë ruajtjes së njoftimit:", err);
+        res.status(500).json({ Error: "Gabim në MySQL: " + err.message });
+    }
+});
+// Endpoint për të marrë lëndët e profesorit të kyçur (mbush dropdown-in në frontend)
+app.get('/api/professor/:id/courses', async (req, res) => {
+    const professorId = req.params.id; // Merr ID-në e profesorit nga URL-ja (p.sh. 20)
+    
+    try {
+        // Ekzekutojmë query-në për të marrë vetëm lëndët që ky profesor ligjëron
+        const [lendet] = await sequelize.query(
+            `SELECT id, emertimi FROM courses WHERE professor_id = ?`,
+            { replacements: [professorId] }
+        );
+        
+        // Dërgojmë listën e lëndëve te React-i
+        res.json(lendet);
+    } catch (err) {
+        console.error("Gabim gjatë marrjes së lëndëve:", err);
+        res.status(500).json({ Error: "Ndodhi një gabim në server: " + err.message });
+    }
+});
+app.post('/api/admin/schedules', async (req, res) => {
+    const { course_id, dita, ora_fillimit, ora_mbarimit, salla } = req.body;
+
+    try {
+        await sequelize.query(`
+            INSERT INTO schedules (course_id, dita, ora_fillimit, ora_mbarimit, salla) 
+            VALUES (?, ?, ?, ?, ?)
+        `, { replacements: [course_id, dita, ora_fillimit, ora_mbarimit, salla] });
+
+        res.json({ Message: "Orari u shtua me sukses!" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ Error: "Gabim në databazë: " + err.message });
+    }
+});
 // Rrugët e shtuara për Kurset dhe Regjistrimet
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/courses', courseRoutes);

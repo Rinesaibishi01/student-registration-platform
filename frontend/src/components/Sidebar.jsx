@@ -6,11 +6,12 @@ function Sidebar() {
   const navigate = useNavigate();
 
   const menuItems = [
-    { name: "Dashboard", path: "/Dashboard-admin", icon: "🏠" },
-    { name: "Studentët", path: "/Students", icon: "🎓" }, 
+    { name: "Dashboard", path: "/dashboard-admin", icon: "🏠" },
+    { name: "Studentët", path: "/students", icon: "🎓" }, 
     { name: "Profesorët", path: "/teachers", icon: "👨‍🏫" },
-    { name: "Kurset", path: "/Courses", icon: "📚" },
-    { name: "Semestrat", path: "/Semesters", icon: "🗓️" },
+    { name: "Kurset", path: "/courses", icon: "📚" },
+    { name: "Semestrat", path: "/semesters", icon: "🗓️" },
+    { name: "Shto Orar", path: "/add-schedule", icon: "📅" },
   ];
 
   const handleLogout = () => {
@@ -30,14 +31,14 @@ function Sidebar() {
         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-2">Admin Panel</p>
       </div>
 
-      {/* NAVIGATION - Fshehja e scrollbar-it bëhet këtu me 'scrollbar-hide' */}
+      {/* NAVIGATION */}
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto no-scrollbar" style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
         <style>
           {`.no-scrollbar::-webkit-scrollbar { display: none; }`}
         </style>
         
         {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname.toLowerCase() === item.path.toLowerCase();
           return (
             <Link
               key={item.name}
@@ -55,7 +56,7 @@ function Sidebar() {
         })}
       </nav>
 
-      {/* LOGOUT BUTTON - Gjithmonë i fiksuar në fund */}
+      {/* LOGOUT BUTTON */}
       <div className="p-6 mt-auto border-t border-slate-800/50 bg-[#111827]">
         <button
           onClick={handleLogout}
