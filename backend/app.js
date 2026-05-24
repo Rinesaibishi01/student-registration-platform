@@ -615,12 +615,13 @@ app.get('/', (req, res) => {
 });
 
 // =========================================================================
-// SHTESA PËR RRUGËT E STUDENTIT (Ngjite në fund të app.js para app.listen)
+// RRUGËT E STUDENTIT (TË blinduara për të shmangur 404 dhe HTML error)
 // =========================================================================
 
-// 1. Për faqen "Përmbledhja" (Kreditë, listat e pritjes, etj.)
-const handleStudentDashboard = async (req, res) => {
-    const sId = req.params.id || req.query.student_id || 1; // nese mungon, merr ID 1 si default
+// 1. Për faqen "Përmbledhja" (Dashboard)
+app.get('/api/dashboard', async (req, res) => {
+    // Kjo kap si /api/dashboard?student_id=1 ashtu edhe /api/dashboard
+    const sId = req.query.student_id || 1; 
     try {
         const [[stats]] = await sequelize.query(`
             SELECT 
@@ -629,15 +630,30 @@ const handleStudentDashboard = async (req, res) => {
                 (SELECT IFNULL(SUM(c.kredite), 0) FROM enrollments e JOIN courses c ON e.course_id = c.id WHERE e.student_id = ?) as credits
         `, { replacements: [sId, sId, sId] });
         
-        res.json(stats || { active: 0, waiting: 0, credits: 0 });
+        // GJITHMONË kthe JSON, asnjëherë HTML!
+        return res.json(stats || { active: 0, waiting: 0, credits: 0 });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: err.message });
     }
-};
-app.get('/api/dashboard', handleStudentDashboard);
-app.get('/api/student-dashboard/:id', handleStudentDashboard); 
+});
 
-// 2. Për faqen "Regjistro Kurset" (Shfaqja e lëndëve)
+// Fallback për rrugën me ID direkte nëse frontend-i e thërret ashtu
+app.get('/api/student-dashboard/:id', async (req, res) => {
+    const sId = req.params.id || 1;
+    try {
+        const [[stats]] = await sequelize.query(`
+            SELECT 
+                (SELECT COUNT(*) FROM enrollments WHERE student_id = ?) as active,
+                (SELECT COUNT(*) FROM waiting_lists WHERE student_id = ?) as waiting,
+                (SELECT IFNULL(SUM(c.kredite), 0) FROM enrollments e JOIN courses c ON e.course_id = c.id WHERE e.student_id = ?) as credits
+        `, { replacements: [sId, sId, sId] });
+        return res.json(stats || { active: 0, waiting: 0, credits: 0 });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// 2. Për faqen "Regjistro Kurset"
 app.get('/api/all-courses', async (req, res) => {
     try {
         const [courses] = await sequelize.query(`
@@ -647,9 +663,9 @@ app.get('/api/all-courses', async (req, res) => {
             LEFT JOIN users u ON p.user_id = u.id
             ORDER BY c.id DESC
         `);
-        res.json(courses);
+        return res.json(courses || []);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: err.message });
     }
 });
 
@@ -663,29 +679,11 @@ app.get('/api/schedule', async (req, res) => {
             JOIN courses c ON c.id = s.course_id
             WHERE e.student_id = ?
         `, { replacements: [sId] });
-        res.json(schedules || []);
+        return res.json(schedules || []);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: err.message });
     }
 });
-
-// 4. Kurset e mia dhe njoftimet (për t'u siguruar që asgjë nuk bllokohet)
-app.get('/api/my-courses', async (req, res) => {
-    const sId = req.query.student_id || 1;
-    try {
-        const [courses] = await sequelize.query("SELECT c.* FROM courses c JOIN enrollments e ON c.id = e.course_id WHERE e.student_id = ?", { replacements: [sId] });
-        res.json(courses || []);
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.get('/api/waiting-list', async (req, res) => {
-    const sId = req.query.student_id || 1;
-    try {
-        const [courses] = await sequelize.query("SELECT c.* FROM courses c JOIN waiting_lists w ON c.id = w.course_id WHERE w.student_id = ?", { replacements: [sId] });
-        res.json(courses || []);
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
 // ==========================================
 // INITIALIZIMI DHE NDEZJA E SERVERIT
 // ==========================================

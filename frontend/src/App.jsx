@@ -12,6 +12,10 @@ import TeacherDashboard from "./pages/Dashboard/TeacherDashboard";
 import Grading from "./pages/Dashboard/Grading";
 import LendetMia from "./pages/Dashboard/LendetMia";
 
+import RegisterCourse from "./pages/Dashboard/RegisterCourse";
+import Schedule from "./pages/Dashboard/Schedule";
+import Messages from "./pages/Dashboard/Messages";
+
 // Importet e skedarëve për Dashboard-in e Profesorit
 import CreateAnnouncement from "./pages/Dashboard/CreateAnnouncement";
 import ProfessorSchedule from "./pages/Dashboard/ProfessorSchedule";
@@ -19,17 +23,25 @@ import ProfessorSchedule from "./pages/Dashboard/ProfessorSchedule";
 // Importi i ri për shtimin e orarit nga Admini
 import AddSchedule from "./pages/Dashboard/AddSchedule";
 
-// Komponenti i përmirësuar për mbrojtjen e rrugëve
-const ProtectedRoute = ({ children, allowedRole }) => {
+// Komponenti i mbrojtjes - Pranon si string ashtu edhe masiv (Array) që të mos kesh konflikt
+const ProtectedRoute = ({ children, allowedRole, allowedRoles }) => {
   const userRole = localStorage.getItem("role");
   
-  console.log("Mbrojtja - Roli i kërkuar:", allowedRole, "| Roli aktual:", userRole);
+  console.log("Mbrojtja - Roli aktual:", userRole);
 
   if (!userRole) {
     return <Navigate to="/" replace />;
   }
 
-  if (allowedRole && userRole.toLowerCase().trim() !== allowedRole.toLowerCase().trim()) {
+  const roleToCheck = userRole.toLowerCase().trim();
+
+  // Kontrolli nëse është përdorur allowedRoles={["student"]}
+  if (allowedRoles && !allowedRoles.map(r => r.toLowerCase().trim()).includes(roleToCheck)) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Kontrolli nëse është përdorur allowedRole="student"
+  if (allowedRole && roleToCheck !== allowedRole.toLowerCase().trim()) {
     return <Navigate to="/" replace />;
   }
 
@@ -98,7 +110,6 @@ function App() {
           } 
         />
 
-        {/* RRUGA E RE PËR SHTIMIN E ORARIT NGA ADMINI */}
         <Route 
           path="/add-schedule" 
           element={
@@ -108,12 +119,48 @@ function App() {
           } 
         />
 
-        {/* 3. RRUGA E STUDENTIT */}
+        {/* 3. RRUGËT E STUDENTIT - TANI JANË STRUKTURUAR BRENDA <ROUTES> */}
         <Route 
           path="/student-panel" 
           element={
             <ProtectedRoute allowedRole="student">
               <StudentDashboard />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/student-dashboard" 
+          element={
+            <ProtectedRoute allowedRole="student">
+              <StudentDashboard /> 
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/register-course" 
+          element={
+            <ProtectedRoute allowedRole="student">
+              <RegisterCourse />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/schedule" 
+          element={
+            <ProtectedRoute allowedRole="student">
+              <Schedule />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/messages" 
+          element={
+            <ProtectedRoute allowedRole="student">
+              <Messages />
             </ProtectedRoute>
           } 
         />
@@ -164,7 +211,7 @@ function App() {
           } 
         />
         
-        {/* 5. CATCH-ALL */}
+        {/* 5. CATCH-ALL (Duhet të jetë gjithmonë e fundit fare brenda <Routes>) */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

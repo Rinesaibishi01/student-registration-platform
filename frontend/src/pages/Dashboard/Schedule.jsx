@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar from '../../components/Sidebar'; // Importojmë Sidebar-in që të jetë pjesë e faqes
-import './Schedule.css'; // Importojmë CSS-in
+import Sidebar from '../../components/StudentSidebar'; 
+import './Schedule.css'; 
 
 const Schedule = () => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Marrim ID-në e studentit të kyçur nga localStorage
   const studentId = localStorage.getItem("studentId") || localStorage.getItem("userId") || 1;
 
   useEffect(() => {
     if (studentId) {
-      fetch(`http://localhost:5000/api/enrollments/my-schedule/${studentId}`)
+      // Korrigjuar rruga për t'u përputhur me pikën 5 në backend-in tënd
+      fetch(`http://localhost:5000/api/schedule?student_id=${studentId}`)
         .then(res => res.json())
         .then(data => {
-          setSchedules(data);
+          setSchedules(Array.isArray(data) ? data : []);
           setLoading(false);
         })
         .catch(err => {
@@ -24,7 +24,6 @@ const Schedule = () => {
     }
   }, [studentId]);
 
-  // Njoftime të shpejta simuluese
   const quickNotifications = [
     { id: 1, text: "Sistemi i orareve është përditësuar me databazën zyrtare.", type: "info" },
     { id: 2, text: "Gjithmonë kontrolloni sallën përpara se të niseni në fakultet.", type: "warning" }
@@ -43,16 +42,12 @@ const Schedule = () => {
 
   return (
     <div className="dashboard-layout">
-      {/* Menuja Anësore */}
       <Sidebar />
-
-      {/* Përmbajtja Kryesore e Orarit */}
       <main className="main-content">
         <div className="schedule-wrapper">
           <h2>Oraret Akademike dhe Kujtesat</h2>
 
           <div className="schedule-container">
-            {/* Kolona e Orareve Dinamike */}
             <div className="schedule-col">
               <h3>Orari Im Javor (Lëndët e Regjistruara)</h3>
               
@@ -61,24 +56,21 @@ const Schedule = () => {
               ) : (
                 schedules.map((item) => (
                   <div key={item.id} className="schedule-card">
-                    {/* Formatizimi i Orës */}
                     <div className="time-slot">
-                      {item.ora_fillimit.substring(0, 5)} - {item.ora_mbarimit.substring(0, 5)}
+                      {item.ora_fillimit ? item.ora_fillimit.substring(0, 5) : "00:00"} - {item.ora_mbarimit ? item.ora_mbarimit.substring(0, 5) : "00:00"}
                     </div>
                     
                     <div className="schedule-details">
-                      <strong>{item.Course?.emertimi}</strong>
+                      <strong>{item.name || item.emertimi}</strong>
                       <p className="room-text">🏫 Salla: {item.salla || "Pa përcaktuar"}</p>
                     </div>
                     
-                    {/* Shfaq dita si Badge (p.sh: E Hënë, E Martë) */}
                     <span className="badge-day">{item.dita}</span>
                   </div>
                 ))
               )}
             </div>
 
-            {/* Kolona e Njoftimeve / Kujtesave */}
             <div className="notify-col">
               <h3>Kujtesa të Shpejta</h3>
               {quickNotifications.map(note => (
