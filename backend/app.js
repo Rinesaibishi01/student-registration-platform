@@ -450,9 +450,9 @@ app.post('/login', async (req, res) => {
     } catch (err) { return res.status(500).json({ Status: "Error", Message: err.message }); }
 });
 
-// ==========================================
+// ========================================
 // API PËR STATISTIKAT E DASHBOARD-IT
-// ==========================================
+// ========================================
 app.get('/api/dashboard-stats', async (req, res) => {
     try {
         const [[{ totalStudents }]] = await sequelize.query("SELECT COUNT(*) as totalStudents FROM students");
@@ -482,11 +482,15 @@ app.get('/api/dashboard-stats', async (req, res) => {
 });
 
 // ==========================================
-// API PËR PROFESORIN DHE ORARIN
+// 🛠️ API-TË E PLOTA PËR PANELIN E PROFESORIT (Me CRUD)
 // ==========================================
+
+// 1. FAQJA: LËNDËT E MIA (READ)
+// Merr të gjitha lëndët e profesorit të kyçur dhe numëron dinamikisht studentët
 app.get('/api/professor/:id/courses', async (req, res) => {
     const loggedInUserId = req.params.id;
     try {
+        // Gjejmë ID-në e profesorit nga tabela professors duke përdorur user_id e sesionit
         const [[professor]] = await sequelize.query(
             `SELECT id FROM professors WHERE user_id = ? LIMIT 1`,
             { replacements: [loggedInUserId] }
@@ -494,29 +498,41 @@ app.get('/api/professor/:id/courses', async (req, res) => {
         const realProfessorId = professor ? professor.id : loggedInUserId;
 
         const [courses] = await sequelize.query(
-            `SELECT id, emertimi, kapaciteti FROM courses WHERE professor_id = ? OR professor_id = ?`,
-            { replacements: [realProfessorId, loggedInUserId] }
+            `SELECT c.id, c.emertimi, c.kapaciteti, c.kredite,
+             COUNT(e.id) AS studentet_regjistruar
+             FROM courses c 
+             LEFT JOIN enrollments e ON c.id = e.course_id AND e.statusi = 'Aktiv'
+             WHERE c.professor_id = ?
+             GROUP BY c.id`,
+            { replacements: [realProfessorId] }
         );
 
-        const safeCourses = courses.map(course => ({ ...course, kreditet: 6 }));
-        return res.json(safeCourses);
+        return res.json(courses);
     } catch (err) {
         return res.status(500).json({ Status: "Error", Message: err.message });
     }
 });
 
+// 2. FAQJA: VLERËSIMI - MERR STUDENTËT (READ)
+// Përmirësuar: Hequr "c.professor_id = 3" që ishte e fiksuar
 app.get('/api/professor/:id/grading-students', async (req, res) => {
     const loggedInUserId = req.params.id; 
     try {
+        const [[professor]] = await sequelize.query(
+            `SELECT id FROM professors WHERE user_id = ? LIMIT 1`,
+            { replacements: [loggedInUserId] }
+        );
+        const realProfessorId = professor ? professor.id : loggedInUserId;
+
         const [studentet] = await sequelize.query(`
-            SELECT e.student_id, c.emertimi AS course_title, e.data_regjistrimit, e.statusi,
+            SELECT e.id AS enrollment_id, e.student_id, c.emertimi AS course_title, e.data_regjistrimit, e.statusi, e.nota,
                    u.firstname AS student_name, u.lastname AS student_lastname
             FROM enrollments e
             JOIN courses c ON e.course_id = c.id
             JOIN students s ON e.student_id = s.id
             JOIN users u ON s.user_id = u.id
-            WHERE c.professor_id = 3 OR c.professor_id = ?
-        `, { replacements: [loggedInUserId] });
+            WHERE c.professor_id = ?
+        `, { replacements: [realProfessorId] });
 
         return res.json(studentet);
     } catch (err) {
@@ -524,36 +540,94 @@ app.get('/api/professor/:id/grading-students', async (req, res) => {
     }
 });
 
-app.get('/api/professor/:id/schedules', async (req, res) => {
-    const professorId = req.params.id; 
+// 3. FAQJA: VLERËSIMI - VENDOS NOTËN (UPDATE -> CRUD)
+// Ky endpoint bën përditësimi e notës dhe ndryshon statusin e studentit
+app.put('/api/professor/submit-grade', async (req, res) => {
+    const { enrollment_id, nota } = req.body;
+    
+    if(!enrollment_id || !nota) {
+        return res.status(400).json({ Error: "Mungon ID e regjistrimit ose nota!" });
+    }
+
     try {
+        // Nëse nota është 6 ose më shumë, statusi kalon në 'I perfunduar' që t'i llogariten kreditë në Dashboard
+        const statusiRi = parseInt(nota) >= 6 ? 'I perfunduar' : 'Aktiv';
+
+        await sequelize.query(`
+            UPDATE enrollments 
+            SET nota = ?, statusi = ?, updatedAt = NOW() 
+            WHERE id = ?
+        `, { replacements: [nota, statusiRi, enrollment_id] });
+
+        return res.json({ Status: "Success", Message: "Nota u vendos dhe kreditë e studentit u përditësuan!" });
+    } catch (err) {
+        return res.status(500).json({ Status: "Error", Message: err.message });
+    }
+});
+
+// 4. FAQJA: ORARI I PROFESORIT (READ)
+app.get('/api/professor/:id/schedules', async (req, res) => {
+    const loggedInUserId = req.params.id; 
+    try {
+        const [[professor]] = await sequelize.query(
+            `SELECT id FROM professors WHERE user_id = ? LIMIT 1`,
+            { replacements: [loggedInUserId] }
+        );
+        const realProfessorId = professor ? professor.id : loggedInUserId;
+
         const [orari] = await sequelize.query(`
-            SELECT s.course_id, s.dita, s.ora_fillimit, s.ora_mbarimit, s.salla 
+            SELECT s.id AS schedule_id, c.emertimi AS course_title, s.dita, s.ora_fillimit, s.ora_mbarimit, s.salla 
             FROM schedules s
             JOIN courses c ON s.course_id = c.id
             WHERE c.professor_id = ?
-        `, { replacements: [professorId] });
+            ORDER BY FIELD(s.dita, 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte')
+        `, { replacements: [realProfessorId] });
+        
         res.json(orari);
     } catch (err) {
         res.status(500).json({ Error: "Gabim në server: " + err.message });
     }
 });
 
-app.post('/api/professor/announcements', async (req, res) => {
-    const { title, content } = req.body; 
-    if (!title || !content) return res.status(400).json({ Error: "Titulli dhe përmbajtja janë të detyrueshme!" });
-
+// 1. Rruga e përditësuar për lëndët e profesorit (LendetMia)
+app.get('/api/professor/:userId/courses', async (req, res) => {
+    const userId = req.params.userId;
     try {
-        await sequelize.query(`
-            INSERT INTO announcements (titulli, permbajtja, data_postimit, course_id) 
-            VALUES (?, ?, NOW(), NULL)
-        `, { replacements: [title, content] });
-        res.json({ Message: "Njoftimi u publikua me sukses!" });
+        // Bëjmë JOIN me tabelën professors që të gjejmë lëndët përmes user_id
+        const query = `
+            SELECT c.id, c.emertimi, c.kredite, c.kapaciteti,
+                   (SELECT COUNT(*) FROM enrollments e WHERE e.course_id = c.id) AS studentetRegjistruar
+            FROM courses c
+            JOIN professors p ON c.professor_id = p.id
+            WHERE p.user_id = ?
+        `;
+        const [results] = await sequelize.query(query, { replacements: [userId] });
+        res.json(results);
     } catch (err) {
-        res.status(500).json({ Error: "Gabim në MySQL: " + err.message });
+        console.error(err);
+        res.status(500).json({ Error: err.message });
     }
 });
 
+// 2. Rruga e përditësuar për orarin e profesorit (ProfessorSchedule)
+app.get('/api/professor/:userId/schedule', async (req, res) => {
+    const userId = req.params.userId;
+    try {
+        // Bëjmë JOIN që të filtrojmë orarin direkt me user_id e profesorit të kyçur
+        const query = `
+            SELECT s.id, s.course_id, c.emertimi AS emri_lendes, s.dita, s.ora_fillimit, s.ora_mbarimit, s.salla 
+            FROM schedules s
+            JOIN courses c ON s.course_id = c.id
+            JOIN professors p ON c.professor_id = p.id
+            WHERE p.user_id = ?
+        `;
+        const [results] = await sequelize.query(query, { replacements: [userId] });
+        res.json(results);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ Error: err.message });
+    }
+});
 // ==========================================
 // API PËR STUDENTIN (REGJISTRIMI I KURSEVE)
 // ==========================================
@@ -597,26 +671,81 @@ app.get('/api/courses-list', async (req, res) => {
 // ==========================================
 // API E ADMINIT (ORARI I RI)
 // ==========================================
-app.post('/api/admin/schedules', async (req, res) => {
-    const { course_id, dita, ora_fillimit, ora_mbarimit, salla } = req.body;
+app.get('/api/professor/:id/courses', (req, res) => {
+    const professorId = req.params.id;
+
+    // Kjo query merr të dhënat fiks siç i kërkon frontend-i yt
+    const query = `
+        SELECT 
+            c.id, 
+            c.title AS emertimi, 
+            c.credits AS kredite, 
+            c.max_capacity AS kapaciteti,
+            (SELECT COUNT(*) FROM enrollments e WHERE e.course_id = c.id) AS studentetRegjistruar
+        FROM courses c
+        WHERE c.professor_id = ?
+    `;
+
+    db.query(query, [professorId], (err, results) => {
+        if (err) {
+            console.error("Gabim në SQL:", err);
+            return res.status(500).json({ Error: "Gabim në server" });
+        }
+        res.json(results);
+    });
+});
+// 1. Endpoint për të marrë orarin e profesorit aktual
+app.get('/api/professor/:id/schedule', async (req, res) => {
+    const professorId = req.params.id;
     try {
-        await sequelize.query(`
-            INSERT INTO schedules (course_id, dita, ora_fillimit, ora_mbarimit, salla) 
-            VALUES (?, ?, ?, ?, ?)
-        `, { replacements: [course_id, dita, ora_fillimit, ora_mbarimit, salla] });
-        res.json({ Message: "Orari u shtua me sukses!" });
+        // SHTUAR: c.emertimi për të marrë emrin e lëndës nga tabela courses
+        const query = `
+            SELECT s.id, s.course_id, c.emertimi AS emri_lendes, s.dita, s.ora_fillimit, s.ora_mbarimit, s.salla 
+            FROM schedules s
+            JOIN courses c ON s.course_id = c.id
+            WHERE c.professor_id = ?
+        `;
+        
+        const [results] = await sequelize.query(query, {
+            replacements: [professorId]
+        });
+        
+        res.json(results);
     } catch (err) {
-        res.status(500).json({ Error: "Gabim në databazë: " + err.message });
+        console.error("Gabim te marrja e orarit:", err);
+        res.status(500).json({ Error: err.message });
     }
 });
 
-app.get('/', (req, res) => {
-    res.send("Serveri i platformës studentore është aktiv dhe po punon!");
-});
+// 2. Endpoint i thjeshtësuar për të shtuar orarin (Prek vetëm kolonat e tua ekzistuese)
+app.post('/api/schedule', async (req, res) => {
+    const { course_id, dita, ora_fillimit, ora_mbarimit, salla } = req.body;
 
+    if (!course_id || !dita || !ora_fillimit || !ora_mbarimit || !salla) {
+        return res.status(400).json({ Error: "Ju lutem plotësoni të gjitha fushat!" });
+    }
+
+    try {
+        // Query që përdor vetëm kolonat ekzakte që shihen në phpMyAdmin-in tënd!
+        const query = `
+            INSERT INTO schedules (course_id, dita, ora_fillimit, ora_mbarimit, salla) 
+            VALUES (?, ?, ?, ?, ?)
+        `;
+        
+        await sequelize.query(query, {
+            replacements: [course_id, dita, ora_fillimit, ora_mbarimit, salla]
+        });
+
+        res.json({ Status: "Success", Message: "Orari u shtua me sukses!" });
+    } catch (err) {
+        console.error("Gabim gjatë ruajtjes së orarit:", err);
+        res.status(500).json({ Error: err.message });
+    }
+});
 // =========================================================================
 // RRUGËT E STUDENTIT (TË blinduara për të shmangur 404 dhe HTML error)
 // =========================================================================
+
 
 // 1. Për faqen "Përmbledhja" (Dashboard)
 app.get('/api/dashboard', async (req, res) => {
@@ -693,7 +822,8 @@ const courseRoutes = require('./routes/courseRoutes');
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/courses', courseRoutes);
 
-sequelize.sync({ alter: true }).then(() => {
+// NDRYSHIMI: U hoq { alter: true } që të mos bllokohet më MySQL
+sequelize.sync().then(() => {
     console.log('Database synced successfully!');
     app.listen(5000, () => {
         console.log("Serveri po punon ne portin 5000");

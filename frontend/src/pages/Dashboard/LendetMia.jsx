@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import TeacherSidebar from "../../components/TeacherSidebar"; // Lidhja me sidebar-in tënd ekzistues
+import TeacherSidebar from "../../components/TeacherSidebar"; 
 
 function LendetMia() {
   const [kurset, setKurset] = useState([]);
   
-  // Marrim ID-në e profesorit nga localStorage e ruajtur gjatë login-it
-  const professorId = localStorage.getItem("userId") || 1; 
+  // MARRJA DINAMIKE: Merr ID-në e saktë të profesorit të kyçur nga localStorage
+  const professorId = localStorage.getItem("userId"); 
 
   useEffect(() => {
+    if (!professorId) return;
+
     axios.get(`http://localhost:5000/api/professor/${professorId}/courses`)
       .then((res) => {
         setKurset(res.data);
@@ -20,10 +22,8 @@ function LendetMia() {
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] font-sans">
-      {/* Sidebar-i yt zyrtar për profesorin */}
       <TeacherSidebar /> 
 
-      {/* Main Content i zhvendosur djathtas për shkak të Sidebar-it */}
       <main className="flex-1 p-10 ml-64 overflow-y-auto">
         <div className="mb-10">
           <h5 className="text-blue-600 font-bold uppercase tracking-widest text-xs mb-2">Sistemi Uni-Akademi</h5>
@@ -58,7 +58,7 @@ function LendetMia() {
                     <td className="py-5 text-slate-500">{kurs.kapaciteti} Studentë</td>
                     <td className="py-5 pr-4 text-right">
                       <span className="px-4 py-1.5 bg-blue-50 text-blue-600 font-bold rounded-xl text-xs shadow-sm">
-                        {kurs.studentetRegjistruar} / {kurs.kapaciteti} Vende
+                        {kurs.studentetRegjistruar || 0} / {kurs.kapaciteti} Vende
                       </span>
                     </td>
                   </tr>
