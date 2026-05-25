@@ -667,7 +667,40 @@ app.get('/api/courses-list', async (req, res) => {
         res.status(500).json({ Error: err.message });
     }
 });
+// 1. Merr të gjitha lëndët e universitetit (Që admini t'i shohë në dropdown)
+app.get('/api/admin/courses', async (req, res) => {
+    try {
+        const query = `SELECT id, emertimi FROM courses`;
+        const [results] = await sequelize.query(query);
+        res.json(results);
+    } catch (err) {
+        console.error("Gabim gjatë marrjes së kurseve për adminin:", err);
+        res.status(500).json({ Error: err.message });
+    }
+});
 
+// 2. Ruaj orarin e ri të krijuar nga Admini
+app.post('/api/admin/schedules', async (req, res) => {
+    const { course_id, dita, ora_fillimit, ora_mbarimit, salla } = req.body;
+
+    if (!course_id || !dita || !ora_fillimit || !ora_mbarimit || !salla) {
+        return res.status(400).json({ Error: "Ju lutem plotësoni të gjitha fushat!" });
+    }
+
+    try {
+        const query = `
+            INSERT INTO schedules (course_id, dita, ora_fillimit, ora_mbarimit, salla) 
+            VALUES (?, ?, ?, ?, ?)
+        `;
+        await sequelize.query(query, {
+            replacements: [course_id, dita, ora_fillimit, ora_mbarimit, salla]
+        });
+        res.json({ Status: "Success", Message: "Orari u shtua me sukses nga Admini!" });
+    } catch (err) {
+        console.error("Gabim gjatë ruajtjes së orarit nga admini:", err);
+        res.status(500).json({ Error: err.message });
+    }
+});
 // ==========================================
 // API E ADMINIT (ORARI I RI)
 // ==========================================
@@ -811,6 +844,51 @@ app.get('/api/schedule', async (req, res) => {
         return res.json(schedules || []);
     } catch (err) {
         return res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/professor/my-schedule', async (req, res) => {
+    try {
+        // Marrim token-in nga Headers (Authorization)
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+
+        if (!token) {
+            return res.status(401).json({ Error: "Token nuk u gjet. Ju lutem kyçuni përsëri." });
+        }
+
+        // Deshifrojmë token-in (Zëvendëso 'jwtSecretKey' me çelësin tënd të saktë nëse e ke ndryshe te Login)
+        jwt.verify(token, 'jwt-secret-key', async (err, decoded) => {
+            if (err) {
+                return res.status(403).json({ Error: "Token jo valid." });
+            }
+
+            // Pasi deshifrohet, marrim id e përdoruesit (user_id) nga token-i
+            // Kujdes: Nëse te Logini e ke emërtuar decoded.id ose decoded.userId, përshtate këtu
+            const userId = decoded.id || decoded.userId; 
+
+            const query = `
+                SELECT 
+                    s.id, 
+                    s.course_id, 
+                    c.emertimi AS emri_lendes, 
+                    s.dita, 
+                    TIME_FORMAT(s.ora_fillimit, '%H:%i') AS ora_fillimit, 
+                    TIME_FORMAT(s.ora_mbarimit, '%H:%i') AS ora_mbarimit, 
+                    s.salla 
+                FROM schedules s
+                JOIN courses c ON s.course_id = c.id
+                JOIN professors p ON c.professor_id = p.id
+                WHERE p.user_id = ?
+            `;
+            
+            const [results] = await sequelize.query(query, { replacements: [userId] });
+            res.json(results);
+        });
+
+    } catch (err) {
+        console.error("Gabim te marrja e orarit:", err);
+        res.status(500).json({ Error: err.message });
     }
 });
 // ==========================================

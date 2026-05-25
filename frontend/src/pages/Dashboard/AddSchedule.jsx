@@ -1,13 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import Sidebar from '../../components/Sidebar'; // Rruga e saktë për te folderi components
+import Sidebar from '../../components/Sidebar'; 
 
 function AddSchedule() {
+    const [courses, setCourses] = useState([]); // Ruajmë të gjitha lëndët e universitetit
     const [courseId, setCourseId] = useState('');
     const [dita, setDita] = useState('E Hënë');
     const [oraFillimit, setOraFillimit] = useState('');
     const [oraMbarimit, setOraMbarimit] = useState('');
     const [salla, setSalla] = useState('');
+
+    // Ngarko të gjitha lëndët nga databaza posa të hapet faqja
+    useEffect(() => {
+        axios.get('http://localhost:5000/api/admin/courses')
+            .then(res => {
+                setCourses(res.data);
+            })
+            .catch(err => {
+                console.error("Gabim gjatë ngarkimit të lëndëve:", err);
+            });
+    }, []);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -28,7 +40,7 @@ function AddSchedule() {
         })
         .catch(err => {
             console.error(err);
-            alert("Ndodhi një gabim! Sigurohu që ID e lëndës ekziston.");
+            alert("Ndodhi një gabim gjatë ruajtjes së orarit!");
         });
     };
 
@@ -47,16 +59,22 @@ function AddSchedule() {
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* NDRYSHIMI: Inputi i numrit u zëvendësua me një Select Dropdown profesional */}
                         <div>
-                            <label className="text-xs font-bold text-gray-400 block mb-1.5 uppercase tracking-wider">ID e Lëndës (Nga Databaza)</label>
-                            <input 
-                                type="number" 
+                            <label className="text-xs font-bold text-gray-400 block mb-1.5 uppercase tracking-wider">Zgjidh Lëndën</label>
+                            <select 
                                 value={courseId} 
                                 onChange={e => setCourseId(e.target.value)} 
                                 required 
-                                className="w-full border border-gray-200 p-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
-                                placeholder="p.sh. 1" 
-                            />
+                                className="w-full border border-gray-200 p-3 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-gray-700 transition-all cursor-pointer"
+                            >
+                                <option value="">-- Zgjidh Lëndën nga Lista --</option>
+                                {courses.map(course => (
+                                    <option key={course.id} value={course.id}>
+                                        {course.emertimi} (ID: {course.id})
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div>
