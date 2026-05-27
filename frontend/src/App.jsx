@@ -9,7 +9,7 @@ import DashboardAdmin from "./pages/Dashboard/Dashboard-admin";
 import Courses from "./pages/Dashboard/Courses"; 
 import Semesters from "./pages/Dashboard/Semester";
 import TeacherDashboard from "./pages/Dashboard/TeacherDashboard";
-import Grading from "./pages/Dashboard/Grading";
+import EnrolledStudents from "./pages/Dashboard/EnrolledStudents";
 import LendetMia from "./pages/Dashboard/LendetMia";
 
 import RegisterCourse from "./pages/Dashboard/RegisterCourse";
@@ -175,15 +175,14 @@ function App() {
           } 
         />
 
-        <Route 
-          path="/grading" 
-          element={
-            <ProtectedRoute allowedRole="professor">
-              <Grading />
-            </ProtectedRoute>
-          } 
-        />
-
+<Route 
+  path="/EnrolledStudents" 
+  element={
+    <ProtectedRoute allowedRole="professor">
+      <EnrolledStudents />
+    </ProtectedRoute>
+  } 
+/>
         <Route 
           path="/teacher-courses" 
           element={

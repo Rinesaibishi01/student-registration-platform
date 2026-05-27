@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { Enrollment, Student, Course } = require('../models');
+// Importo sequelize nga skedari yt db.js (sigurohu për rrugën e saktë)
+const sequelize = require('../config/db');
+const { QueryTypes } = require('sequelize');
 
 // 1. MARRJA E TË GJITHA REGJISTRIMEVE
 router.get('/', async (req, res) => {
@@ -12,63 +14,79 @@ router.get('/', async (req, res) => {
     }
 });
 
-// 2. MARRJA E REGJISTRIMEVE TË NJË STUDENTI SPECIFIK
-router.get('/my-courses/:student_id', async (req, res) => {
+router.get('/my-courses', async (req, res) => {
+    const userId = req.query.user_id;
+    if (!userId) return res.status(400).json({ error: "User ID mungon" });
+
     try {
-        const enrollments = await Enrollment.findAll({
-            where: { student_id: req.params.student_id }
-        });
-        res.json(enrollments);
+        const courses = await sequelize.query(
+            `SELECT c.emertimi, c.id, c.kredite, u.firstname, u.lastname
+             FROM courses c
+             JOIN enrollments e ON c.id = e.course_id
+             JOIN students s ON e.student_id = s.id
+             LEFT JOIN professors p ON c.professor_id = p.id
+             LEFT JOIN users u ON p.user_id = u.id
+             WHERE s.user_id = :uId`,
+            {
+                replacements: { uId: userId },
+                type: QueryTypes.SELECT
+            }
+        );
+        res.json(courses);
     } catch (err) {
-        res.status(500).json({ Status: "Error", Message: err.message });
-    }
-});
-
-// 3. REGJISTRIMI I NJË STUDENTI NË LËNDË
-router.post('/add', async (req, res) => {
-    try {
-        const { student_id, course_id } = req.body;
-
-        // Kontrollo nëse studenti dhe kursi ekzistojnë
-        const studentExists = await Student.findByPk(student_id);
-        const courseExists = await Course.findByPk(course_id);
-
-        if (!studentExists || !courseExists) {
-            return res.json({ Status: "Error", Message: "Studenti ose Kursi nuk ekziston në sistem!" });
-        }
-
-        // Kontrollo nëse studenti është regjistruar tashmë
-        const existingEnrollment = await Enrollment.findOne({
-            where: { student_id, course_id }
-        });
-
-        if (existingEnrollment) {
-            return res.json({ Status: "Error", Message: "Studenti është i regjistruar tashmë në këtë lëndë!" });
-        }
-
-        // Krijimi i regjistrimit
-        const newEnrollment = await Enrollment.create({
-            student_id,
-            course_id,
-            statusi: 'active'
-        });
-
-        res.json({ Status: "Success", Data: newEnrollment });
-    } catch (err) {
-        console.error("Gabim në server:", err);
-        res.status(500).json({ Status: "Error", Message: "Gabim gjatë regjistrimit në bazën e të dhënave." });
+        console.error("Gabim SQL:", err);
+        res.status(500).json({ error: err.message });
     }
 });
 
 // 4. ANULIMI I NJË REGJISTRIMI (DELETE)
+// 2. Rruga për çregjistrim (DELETE)
 router.delete('/drop/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        await Enrollment.destroy({ where: { id } });
-        res.json({ Status: "Success", Message: "Regjistrimi u fshi me sukses!" });
+        
+        // Fshi regjistrimin duke përdorur ID-në e marrë nga parametri
+        const deleted = await Enrollment.destroy({ 
+            where: { id: id } 
+        });
+
+        if (deleted) {
+            res.json({ Status: "Success", Message: "Regjistrimi u fshi me sukses!" });
+        } else {
+            res.status(404).json({ Status: "Error", Message: "Regjistrimi nuk u gjet." });
+        }
     } catch (err) {
+        console.error("Gabim gjatë fshirjes:", err);
         res.status(500).json({ Status: "Error", Message: err.message });
     }
 });
+// Në backend/routes/enrollmentRoutes.js
+// Te backend/routes/enrollmentRoutes.js
+router.get('/professor/students/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        // Ky Query i lidh të gjitha tabelat saktë:
+        // p = professors, c = courses, e = enrollments, s = students, u = users
+const query = `
+    SELECT u.firstname, u.lastname, c.emertimi, e.data_regjistrimit, 'Aktiv' AS statusi 
+    FROM enrollments e
+    JOIN students s ON e.student_id = s.id
+    JOIN users u ON s.user_id = u.id
+    JOIN courses c ON e.course_id = c.id
+    JOIN professors p ON c.professor_id = p.id
+    WHERE p.user_id = ?
+`;
 
+        const students = await sequelize.query(query, {
+            replacements: [userId],
+            type: sequelize.QueryTypes.SELECT
+        });
+        
+        res.json(students);
+    } catch (err) {
+        console.error("SQL Error detajuar:", err); // Kjo do të nxjerrë gabimin në terminalin e VS Code
+        res.status(500).json({ error: err.message });
+    }
+});
 module.exports = router;

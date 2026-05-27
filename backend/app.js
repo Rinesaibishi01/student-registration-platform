@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const app = express();
 const sequelize = require('./config/db');
 
+
 // Importimi i modeleve (Shtuar Semester)
 const { User, Student, Enrollment, Course, WaitingList, Announcement, Semester } = require('./models'); 
 
@@ -71,43 +72,26 @@ const handleRegister = async (req, res) => {
     }
 
     try {
-        const existingUser = await User.findOne({ where: { email } });
-        if (existingUser) {
-            return res.status(400).json({ message: "Ky email është i regjistruar tashmë!" });
-        }
+        // Përdorim transaksion për të garantuar që krijojmë user-in DHE studentin
+        await sequelize.transaction(async (t) => {
+    // 1. Krijo userin
+    const newUser = await User.create({ firstname, lastname, email, password, role: 'student' }, { transaction: t });
+    
+    // 2. Krijo studentin (Lidhja me user_id është esenciale)
+    await Student.create({
+        user_id: newUser.id,
+        numri_studentit: "ST" + Math.floor(100000 + Math.random() * 900000),
+        programi: 'I pacaktuar',
+        viti_studimit: 1
+    }, { transaction: t });
+});
 
-        // Krijojmë User-in
-        const newUser = await User.create({
-            firstname,
-            lastname,
-            email,
-            password,
-            role: 'student'
-        });
-
-        // Gjenerojmë një numër studenti automatik
-        const numriStudentit = "ST" + Math.floor(100000 + Math.random() * 900000);
-        
-        // Krijojmë profilin e Studentit të lidhur me User
-        await Student.create({ 
-            user_id: newUser.id, 
-            numri_studentit: numriStudentit, 
-            programi: 'I pacaktuar', 
-            viti_studimit: 1 
-        });
-
-        return res.status(201).json({ 
-            Status: "Success", 
-            message: "Llogaria u krijua me sukses!",
-            role: newUser.role, 
-            name: newUser.firstname 
-        });
-
+        return res.status(201).json({ Status: "Success", message: "Llogaria u krijua me sukses!" });
     } catch (err) {
+        console.error("Gabim gjatë regjistrimit:", err);
         return res.status(500).json({ Status: "Error", Message: err.message });
     }
 };
-
 // Rrugët e Auth
 app.post('/api/login', handleLogin);
 app.post('/api/register', handleRegister);
@@ -432,20 +416,24 @@ app.delete('/delete-semester/:id', async (req, res) => {
 // ==========================================
 // Rruga tjetër e Login (Me JWT)
 // ==========================================
+// Gjej këtë rrugë në app.js dhe sigurohu që është kështu:
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User.findOne({ where: { email, password } });
         if (user) {
-            let studentId = null;
-            if (user.role === 'student') {
-                const student = await Student.findOne({ where: { user_id: user.id } });
-                studentId = student ? student.id : null;
-            }
             const token = jwt.sign({ id: user.id, role: user.role }, "sekreti_yt_shume_i_sigurt", { expiresIn: '1d' });
-            return res.json({ Status: "Success", role: user.role, name: user.firstname, studentId, token });
+            
+            // KËTU DUHET TË JETË 'id: user.id'
+            return res.json({ 
+                Status: "Success", 
+                role: user.role, 
+                name: user.firstname, 
+                id: user.id, // Kjo është çelësi që i mungonte
+                token 
+            });
         } else { 
-            return res.json({ Status: "Invalid", Message: "Gabim!" }); 
+            return res.json({ Status: "Invalid", Message: "Gabim kredencialet!" }); 
         }
     } catch (err) { return res.status(500).json({ Status: "Error", Message: err.message }); }
 });
@@ -540,7 +528,6 @@ app.get('/api/professor/:id/grading-students', async (req, res) => {
     }
 });
 
-// 3. FAQJA: VLERËSIMI - VENDOS NOTËN (UPDATE -> CRUD)
 // Ky endpoint bën përditësimi e notës dhe ndryshon statusin e studentit
 app.put('/api/professor/submit-grade', async (req, res) => {
     const { enrollment_id, nota } = req.body;
@@ -632,28 +619,44 @@ app.get('/api/professor/:userId/schedule', async (req, res) => {
 // API PËR STUDENTIN (REGJISTRIMI I KURSEVE)
 // ==========================================
 app.post('/api/student/register-course', async (req, res) => {
-    const { student_user_id, course_id } = req.body;
-    try {
-        let [student] = await sequelize.query('SELECT id FROM students WHERE user_id = ? LIMIT 1', { replacements: [student_user_id] });
+    // Në React po dërgon { student_id: Number(sId) }
+    const { student_id, course_id } = req.body;
 
-        let studentId;
-        if (student.length === 0) {
-            const [result] = await sequelize.query('INSERT INTO students (user_id, createdAt, updatedAt) VALUES (?, NOW(), NOW())', { replacements: [student_user_id] });
-            studentId = result;
-        } else {
-            studentId = student[0].id;
+    try {
+        // Hapi 1: Gjej ID-në e studentit duke u bazuar te user_id-ja që vjen nga localStorage
+        // Nëse tabela students ka kolonën 'user_id', kjo kërkesë duhet ta gjejë
+        const [rows] = await sequelize.query(
+            'SELECT id FROM students WHERE user_id = ?', 
+            { replacements: [student_id] }
+        );
+
+        // NËSE NUK E GJETI ME user_id, provo të kërkosh direkt me id-në (nëse student_id është ID-ja e tabelës students)
+        let sId = (rows.length > 0) ? rows[0].id : student_id;
+
+        // Hapi 2: Kontrollo nëse studenti ekziston vërtet (për të shmangur gabimin e Foreign Key)
+        const [studentExists] = await sequelize.query('SELECT id FROM students WHERE id = ?', { replacements: [sId] });
+        if (studentExists.length === 0) {
+            return res.status(404).json({ Error: "Ky student nuk ekziston në bazën e të dhënave të studentëve." });
         }
 
-        const [existing] = await sequelize.query('SELECT id FROM enrollments WHERE student_id = ? AND course_id = ?', { replacements: [studentId, course_id] });
-        if (existing.length > 0) return res.status(400).json({ Message: "Ju jeni të regjistruar në këtë lëndë!" });
+        // Hapi 3: Kontrollo mos është regjistruar tashmë
+        const [existing] = await sequelize.query(
+            'SELECT id FROM enrollments WHERE student_id = ? AND course_id = ?',
+            { replacements: [sId, course_id] }
+        );
+        if (existing.length > 0) return res.status(400).json({ Error: "Jeni tashmë të regjistruar!" });
 
-        await sequelize.query('INSERT INTO enrollments (student_id, course_id, data_regjistrimit, statusi) VALUES (?, ?, NOW(), ?)', { replacements: [studentId, course_id, 'Aktiv'] });
+        // Hapi 4: Regjistro
+        await sequelize.query(
+            'INSERT INTO enrollments (student_id, course_id, data_regjistrimit, statusi) VALUES (?, ?, NOW(), "Aktiv")',
+            { replacements: [sId, course_id] }
+        );
+
         return res.json({ Status: "Success", Message: "U regjistruat me sukses!" });
     } catch (err) {
         return res.status(500).json({ Error: err.message });
     }
 });
-
 app.get('/api/courses-list', async (req, res) => {
     try {
         const [courses] = await sequelize.query(`
@@ -779,7 +782,6 @@ app.post('/api/schedule', async (req, res) => {
 // RRUGËT E STUDENTIT (TË blinduara për të shmangur 404 dhe HTML error)
 // =========================================================================
 
-
 // 1. Për faqen "Përmbledhja" (Dashboard)
 app.get('/api/dashboard', async (req, res) => {
     // Kjo kap si /api/dashboard?student_id=1 ashtu edhe /api/dashboard
@@ -798,7 +800,6 @@ app.get('/api/dashboard', async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 });
-
 // Fallback për rrugën me ID direkte nëse frontend-i e thërret ashtu
 app.get('/api/student-dashboard/:id', async (req, res) => {
     const sId = req.params.id || 1;
@@ -814,7 +815,6 @@ app.get('/api/student-dashboard/:id', async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 });
-
 // 2. Për faqen "Regjistro Kurset"
 app.get('/api/all-courses', async (req, res) => {
     try {
@@ -830,7 +830,6 @@ app.get('/api/all-courses', async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 });
-
 // 3. Për faqen "Orari Im"
 app.get('/api/schedule', async (req, res) => {
     const sId = req.query.student_id || 1;
@@ -846,27 +845,22 @@ app.get('/api/schedule', async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 });
-
 app.get('/api/professor/my-schedule', async (req, res) => {
     try {
         // Marrim token-in nga Headers (Authorization)
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1];
-
         if (!token) {
             return res.status(401).json({ Error: "Token nuk u gjet. Ju lutem kyçuni përsëri." });
         }
-
         // Deshifrojmë token-in (Zëvendëso 'jwtSecretKey' me çelësin tënd të saktë nëse e ke ndryshe te Login)
         jwt.verify(token, 'jwt-secret-key', async (err, decoded) => {
             if (err) {
                 return res.status(403).json({ Error: "Token jo valid." });
             }
-
             // Pasi deshifrohet, marrim id e përdoruesit (user_id) nga token-i
             // Kujdes: Nëse te Logini e ke emërtuar decoded.id ose decoded.userId, përshtate këtu
             const userId = decoded.id || decoded.userId; 
-
             const query = `
                 SELECT 
                     s.id, 
@@ -885,18 +879,107 @@ app.get('/api/professor/my-schedule', async (req, res) => {
             const [results] = await sequelize.query(query, { replacements: [userId] });
             res.json(results);
         });
-
     } catch (err) {
         console.error("Gabim te marrja e orarit:", err);
         res.status(500).json({ Error: err.message });
     }
 });
+// =========================================================================
+// MODULI SHTESË PËR NJOFTIMET (VERSIONI I PASTRUAR DHE FINAL - PHPMYADMIN)
+// =========================================================================
+// 1. API për Profesorin: Publiko njoftim të ri
+app.post('/api/professor/announcements', async (req, res) => {
+    const { title, content, course_id } = req.body;
+    try {
+        // Query i saktë direkt në kolonat që ekzistojnë në phpMyAdmin-in tënd
+        const query = `
+            INSERT INTO announcements (titulli, permbajtja, course_id) 
+            VALUES (?, ?, ?)
+        `;
+        
+        await sequelize.query(query, { replacements: [title, content, course_id] });
+        res.json({ Status: "Success", Message: "Njoftimi u publikua me sukses!" });
+    } catch (err) {
+        console.error("Gabim fatal gjatë publikimit:", err);
+        res.status(500).json({ Error: err.message });
+    }
+});
+// 2. API për Profesorin: Shfaq njoftimet poshtë formës së tij
+app.get('/api/professor/:userId/announcements', async (req, res) => {
+    try {
+        // Marrim të gjitha njoftimet nga tabela
+        const query = `
+            SELECT id, titulli AS title, permbajtja AS content, course_id 
+            FROM announcements 
+            ORDER BY id DESC
+        `;
+        const [results] = await sequelize.query(query);
+        res.json(results);
+    } catch (err) {
+        console.error("Gabim gjatë marrjes së njoftimeve:", err);
+        res.status(500).json({ Error: err.message });
+    }
+});
+
+app.post('/api/enrollments', async (req, res) => {
+    try {
+        const { student_id, course_id } = req.body;
+        
+        // Shto regjistrimin në databazë
+        const newEnrollment = await Enrollment.create({
+            student_id: student_id,
+            course_id: course_id,
+            data_regjistrimit: new Date(),
+            statusi: 'Aktiv'
+        });
+        res.status(201).json({ message: "Studenti u regjistrua me sukses!", data: newEnrollment });
+    } catch (err) {
+        console.error("Gabim në regjistrim:", err);
+        res.status(500).json({ error: "Regjistrimi dështoi!" });
+    }
+});
+
+app.get('/api/all-courses', async (req, res) => {
+    try {
+        const query = `
+            SELECT c.id, c.emertimi, c.pershkrimi, c.kredite, c.kapaciteti, p.emri AS prof_name
+            FROM courses c
+            LEFT JOIN professors p ON c.id_profesori = p.id
+        `;
+        const [results] = await sequelize.query(query);
+        res.json(results);
+    } catch (err) {
+        console.error("Gabim te all-courses:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+// Këtë e shton te app.js (në rrugën e regjistrimit)
+app.post('/api/register', async (req, res) => {
+    const { firstname, lastname, email, password } = req.body;
+    
+    try {
+        await sequelize.transaction(async (t) => {
+            // 1. Krijo përdoruesin
+            const user = await User.create({ firstname, lastname, email, password, role: 'student' }, { transaction: t });
+            
+            // 2. Krijo automatikisht profilin e studentit
+            await Student.create({
+                user_id: user.id, // Kjo lidhje është kritike!
+                // shto fushat e tjera që ke te tabela students
+            }, { transaction: t });
+        });
+        res.status(201).json({ message: "Regjistrimi u krye me sukses!" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ==========================================
 // INITIALIZIMI DHE NDEZJA E SERVERIT
 // ==========================================
 const enrollmentRoutes = require('./routes/enrollmentRoutes');
 const courseRoutes = require('./routes/courseRoutes'); 
-
+// Ndryshoje në:
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/courses', courseRoutes);
 

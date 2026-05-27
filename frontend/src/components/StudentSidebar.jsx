@@ -7,7 +7,7 @@ function StudentSidebar() {
 
   // Rrugët specifike për panelin e studentit
   const menuItems = [
-    { name: "Përmbledhja", path: "/student-dashboard", icon: "🏠" },
+    { name: "Student-Panel", path: "/student-dashboard", icon: "🏠" },
     { name: "Regjistro Kurset", path: "/register-course", icon: "📚" },
     { name: "Orari Im", path: "/schedule", icon: "📅" },
     { name: "Mesazhet", path: "/messages", icon: "💬" },

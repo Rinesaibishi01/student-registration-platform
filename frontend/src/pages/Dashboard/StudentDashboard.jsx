@@ -1,166 +1,78 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios'; // Sigurohu që ke instaluar axios: npm install axios
 import Sidebar from '../../components/StudentSidebar'; 
-import './StudentDashboard.css';
 
 const StudentDashboard = () => {
-  // Përshtatur me strukturën që kthen backend-i yt (statistikat direkte)
-  const [stats, setStats] = useState({ active: 0, waiting: 0, credits: 0 });
   const [myCourses, setMyCourses] = useState([]);
-  const [waitingList, setWaitingList] = useState([]);
-  const [announcements, setAnnouncements] = useState([]);
-  const [message, setMessage] = useState({ text: '', type: '' });
-  
-  const studentId = localStorage.getItem("studentId") || localStorage.getItem("userId") || 1;
-
-  const fetchDashboardData = async () => {
-    if (!studentId) return;
-    try {
-      // 1. Merr statistikat e shpejta
-      const resStats = await fetch(`http://localhost:5000/api/dashboard?student_id=${studentId}`);
-      const dataStats = await resStats.json();
-      setStats(dataStats || { active: 0, waiting: 0, credits: 0 });
-
-      // 2. Merr kurset e mia
-      const resCourses = await fetch(`http://localhost:5000/api/my-courses?student_id=${studentId}`);
-      const dataCourses = await resCourses.json();
-      setMyCourses(Array.isArray(dataCourses) ? dataCourses : []);
-
-      // 3. Merr listën e pritjes
-      const resWaiting = await fetch(`http://localhost:5000/api/waiting-list?student_id=${studentId}`);
-      const dataWaiting = await resWaiting.json();
-      setWaitingList(Array.isArray(dataWaiting) ? dataWaiting : []);
-
-      // 4. Merr njoftimet
-      const resAnnouncements = await fetch(`http://localhost:5000/api/announcements?student_id=${studentId}`);
-      const dataAnnouncements = await resAnnouncements.json();
-      setAnnouncements(Array.isArray(dataAnnouncements) ? dataAnnouncements : []);
-
-    } catch (err) {
-      console.error("Gabim gjatë marrjes së të dhënave:", err);
-    }
-  };
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [studentId]);
+    const fetchData = async () => {
+      const userId = localStorage.getItem("userId");
+      if (!userId) return;
 
-  const handleDropCourse = async (courseId) => {
-    if (!window.confirm("A jeni të sigurt që dëshironi të çregjistroheni nga kjo lëndë?")) return;
-
-    try {
-      // Ndryshuar për t'u përshtatur me fshirjen e thjeshtë sipas courseId dhe studentId nëse s'ke rrugë specifike
-      const response = await fetch(`http://localhost:5000/api/enrollments/drop/${courseId}`, {
-        method: 'DELETE'
-      });
-      const resData = await response.json();
-
-      if (response.ok) {
-        setMessage({ text: resData.message || "U çregjistruat me sukses!", type: 'success' });
-        fetchDashboardData(); 
-      } else {
-        setMessage({ text: resData.message || "Gabim gjatë çregjistrimit.", type: 'error' });
+      try {
+        const res = await axios.get(`http://localhost:5000/api/student/my-courses?user_id=${userId}`);
+        if (Array.isArray(res.data)) {
+          setMyCourses(res.data);
+        }
+      } catch (err) {
+        console.error("Gabim gjatë marrjes së kurseve:", err);
       }
-    } catch (err) {
-      console.error(err);
-      setMessage({ text: "Gabim në lidhje me serverin.", type: 'error' });
+    };
+    fetchData();
+  }, []);
+
+  const handleDrop = async (enrollmentId) => {
+    if (window.confirm("A jeni i sigurt që dëshironi të çregjistroheni nga ky kurs?")) {
+      try {
+        await axios.delete(`http://localhost:5000/api/enrollments/drop/${enrollmentId}`);
+        // Përditëso listën në UI pa pasur nevojë për refresh
+        setMyCourses(myCourses.filter(c => c.enrollment_id !== enrollmentId));
+        alert("Çregjistrimi u bë me sukses!");
+      } catch (err) {
+        console.error("Gabim gjatë çregjistrimit:", err);
+        alert("Gabim gjatë procesit të çregjistrimit.");
+      }
     }
   };
 
   return (
-    <div className="dashboard-layout">
-      <Sidebar />
-      <main className="main-content">
-        <h1>Mirë se erdhe në Panelin tënd!</h1>
-        
-        {message.text && (
-          <div className={`alert-message ${message.type}`}>
-            {message.text}
-          </div>
-        )}
-
-        {/* Seksioni i Statistikave të Shpejta */}
-        <div className="stats-grid">
-           <div className="card-stat">
-             <h3>Kurse Aktive</h3>
-             <p>{stats.active || 0}</p>
-           </div>
-           <div className="card-stat">
-             <h3>Në Listë Pritjeje</h3>
-             <p>{stats.waiting || 0}</p>
-           </div>
-           <div className="card-stat">
-             <h3>Kredite të Grumbulluara</h3>
-             <p>{stats.credits || 0}</p>
-           </div>
-        </div>
-
-        <div className="dashboard-sections">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <div className="w-64 flex-shrink-0">
+        <Sidebar />
+      </div>
+      <main className="flex-1 overflow-y-auto p-8">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-3xl font-bold mb-8">Mirë se erdhe, Rina!</h1>
           
-          {/* PJESA 1: KURSET E MIA */}
-          <div className="section-block">
-            <h2>Kurset e Mia të Regjistruara</h2>
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <h2 className="text-xl font-bold mb-4">Kurset e Mia</h2>
+            
             {myCourses.length === 0 ? (
-              <p className="no-data">Nuk jeni regjistruar në asnjë kurs ende.</p>
+              <p className="text-gray-500">Nuk keni kurse të regjistruara në sistem.</p>
             ) : (
-              <div className="dashboard-list">
-                {myCourses.map(course => (
-                  <div className="list-item" key={course.id}>
-                    <div>
-                      <span className="item-title">{course.emertimi}</span>
-                      <span className="item-sub">Kredite: {course.kredite} | Kodi: {course.kodi}</span>
-                    </div>
-                    <button 
-                      className="btn-drop" 
-                      onClick={() => handleDropCourse(course.id)}
-                    >
-                      Çregjistrohu (Drop)
-                    </button>
+              myCourses.map((c) => (
+                <div key={c.id} className="p-4 bg-gray-50 rounded-xl mb-3 border border-gray-100 flex justify-between items-center">
+                  <div>
+                    <p className="font-bold text-lg">{c.emertimi}</p>
+                    <p className="text-sm text-gray-600">
+                      ID Kursi: {c.id} | Kredite: {c.kredite}
+                    </p>
+                    <p className="text-sm font-semibold text-blue-700">
+                      Prof: {c.firstname ? `${c.firstname} ${c.lastname}` : "Nuk është caktuar"}
+                    </p>
                   </div>
-                ))}
-              </div>
+                  
+                  <button 
+                    onClick={() => handleDrop(c.enrollment_id)} 
+                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition font-medium"
+                  >
+                    Çregjistrohu
+                  </button>
+                </div>
+              ))
             )}
           </div>
-
-          {/* PJESA 2: LISTA E PRITJES */}
-          <div className="section-block">
-            <h2>Lëndët në Listën e Pritjes (Waiting List)</h2>
-            {waitingList.length === 0 ? (
-              <p className="no-data">Nuk keni asnjë lëndë në pritje.</p>
-            ) : (
-              <div className="dashboard-list">
-                {waitingList.map(w => (
-                  <div className="list-item waiting-item" key={w.id}>
-                    <div>
-                      <span className="item-title">{w.emertimi}</span>
-                      <span className="item-sub">Kredite: {w.kredite}</span>
-                    </div>
-                    <span className="badge-waiting-status">Në Pritje</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* PJESA 3: NJOFTIMET E FUNDIT */}
-          <div className="section-block announcements-section">
-            <h2>🔔 Njoftimet e Fundit</h2>
-            {announcements.length === 0 ? (
-              <p className="no-data">Nuk ka asnjë njoftim për lëndët tuaja.</p>
-            ) : (
-              <div className="announcements-list">
-                {announcements.map(a => (
-                  <div className="announcement-card" key={a.id}>
-                    <h4>{a.titulli || "Njoftim i ri"}</h4>
-                    <p>{a.permbajtja}</p>
-                    <span className="announcement-date">
-                      {a.data_publikimit ? new Date(a.data_publikimit).toLocaleDateString() : ""}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
         </div>
       </main>
     </div>

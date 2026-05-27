@@ -9,7 +9,7 @@ function TeacherSidebar() {
   const menuItems = [
     { name: "Përmbledhja", path: "/teacher-dashboard", icon: "📊" },
     { name: "Lëndët e Mia", path: "/teacher-courses", icon: "📚" },
-    { name: "Vlerësimi", path: "/grading", icon: "📝" },
+    { name: "Studentët e Regjistruar", path: "/EnrolledStudents", icon: "📝" },
     { name: "Krijo Njoftim", path: "/create-announcement", icon: "📢" },
     { name: "Orari im", path: "/professor-schedule", icon: "📅" },
   ];
