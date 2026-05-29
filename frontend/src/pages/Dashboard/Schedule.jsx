@@ -1,85 +1,72 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar from '../../components/StudentSidebar'; 
-import './Schedule.css'; 
+import Sidebar from '../../components/StudentSidebar';
 
 const Schedule = () => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  const studentId = localStorage.getItem("studentId") || localStorage.getItem("userId") || 1;
+
+  // Marrim user_id nga localStorage (sigurohu që te Logini e ke ruajtur si 'userId' ose 'student_id')
+  const userId = localStorage.getItem("userId") || localStorage.getItem("student_id");
 
   useEffect(() => {
-    if (studentId) {
-      // Korrigjuar rruga për t'u përputhur me pikën 5 në backend-in tënd
-      fetch(`http://localhost:5000/api/schedule?student_id=${studentId}`)
-        .then(res => res.json())
-        .then(data => {
-          setSchedules(Array.isArray(data) ? data : []);
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error("Gabim gjatë marrjes së orarit:", err);
-          setLoading(false);
-        });
-    }
-  }, [studentId]);
+    const fetchSchedule = async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+      try {
+        // Thërrasim API-në e re që e krijuam në Backend
+        const res = await fetch(`http://localhost:5000/api/student/${userId}/schedule`);
+        const data = await res.json();
+        setSchedules(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Gabim gjatë marrjes së orarit:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const quickNotifications = [
-    { id: 1, text: "Sistemi i orareve është përditësuar me databazën zyrtare.", type: "info" },
-    { id: 2, text: "Gjithmonë kontrolloni sallën përpara se të niseni në fakultet.", type: "warning" }
-  ];
-
-  if (loading) {
-    return (
-      <div className="dashboard-layout">
-        <Sidebar />
-        <main className="main-content">
-          <div className="loading">Duke ngarkuar orarin javor...</div>
-        </main>
-      </div>
-    );
-  }
+    fetchSchedule();
+  }, [userId]);
 
   return (
-    <div className="dashboard-layout">
+    <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
-      <main className="main-content">
-        <div className="schedule-wrapper">
-          <h2>Oraret Akademike dhe Kujtesat</h2>
+      <main className="flex-1 overflow-y-auto ml-65 px-10 py-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-3xl shadow-sm border p-8 mb-8">
+            <h2 className="text-4xl font-bold text-center text-gray-800">Orari Im Akademik</h2>
+          </div>
 
-          <div className="schedule-container">
-            <div className="schedule-col">
-              <h3>Orari Im Javor (Lëndët e Regjistruara)</h3>
-              
-              {schedules.length === 0 ? (
-                <p className="no-schedule">Nuk u gjet asnjë orar. Sigurohuni që jeni regjistruar në lëndë!</p>
-              ) : (
-                schedules.map((item) => (
-                  <div key={item.id} className="schedule-card">
-                    <div className="time-slot">
-                      {item.ora_fillimit ? item.ora_fillimit.substring(0, 5) : "00:00"} - {item.ora_mbarimit ? item.ora_mbarimit.substring(0, 5) : "00:00"}
-                    </div>
-                    
-                    <div className="schedule-details">
-                      <strong>{item.name || item.emertimi}</strong>
-                      <p className="room-text">🏫 Salla: {item.salla || "Pa përcaktuar"}</p>
-                    </div>
-                    
-                    <span className="badge-day">{item.dita}</span>
-                  </div>
-                ))
-              )}
+          {loading ? (
+            <div className="text-center text-gray-500">Duke ngarkuar...</div>
+          ) : schedules.length === 0 ? (
+            <div className="bg-white rounded-3xl shadow-sm border p-8 text-center">
+              <p className="text-gray-500 text-lg">Nuk keni orar për momentin. Kontrolloni regjistrimet.</p>
             </div>
+          ) : (
+            <div className="bg-white rounded-3xl shadow-md border overflow-hidden">
+              <div className="grid grid-cols-[1fr_1fr_1fr_2fr_1fr] bg-blue-900 text-white font-semibold text-base">
+                <div className="p-6 text-center">Dita</div>
+                <div className="p-6 text-center">Ora</div>
+                <div className="p-6 text-center">Salla</div>
+                <div className="p-6 text-center">Lënda</div>
+                <div className="p-6 text-center">Statusi</div>
+              </div>
 
-            <div className="notify-col">
-              <h3>Kujtesa të Shpejta</h3>
-              {quickNotifications.map(note => (
-                <div key={note.id} className={`notify-item ${note.type === 'warning' ? 'notify-warning' : 'notify-info'}`}>
-                  <p style={{ margin: 0, fontSize: '14px' }}>{note.text}</p>
+              {schedules.map((item, index) => (
+                <div key={`${item.id}-${index}`} className="grid grid-cols-[1fr_1fr_1fr_2fr_1fr] items-center border-b hover:bg-gray-50 transition">
+                  <div className="p-6 text-center font-medium text-gray-700">{item.dita}</div>
+                  <div className="p-6 text-center text-blue-700 font-bold">{item.ora_fillimit?.slice(0, 5)} - {item.ora_mbarimit?.slice(0, 5)}</div>
+                  <div className="p-6 text-center text-gray-700">{item.salla}</div>
+                  <div className="p-6 text-center font-semibold text-gray-800">{item.emertimi}</div>
+                  <div className="p-6 flex justify-center">
+                    <span className="bg-green-100 text-green-700 text-sm font-bold px-5 py-2 rounded-full">AKTIV</span>
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>

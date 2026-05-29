@@ -11,7 +11,8 @@ const StudentDashboard = () => {
       if (!userId) return;
 
       try {
-        const res = await axios.get(`http://localhost:5000/api/student/my-courses?user_id=${userId}`);
+
+const res = await axios.get(`http://localhost:5000/api/enrollments/my-courses?user_id=${userId}`);
         if (Array.isArray(res.data)) {
           setMyCourses(res.data);
         }

@@ -1,63 +1,67 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import Sidebar from '../../components/StudentSidebar'; 
 
-function StudentDashboard() {
+const Messages = () => {
   const [njoftimet, setNjoftimet] = useState([]);
-
-  // Funksioni për të deshifruar token-in e studentit të kyçur
-  const parseJwt = (token) => {
-    try { return JSON.parse(atob(token.split('.')[1])); } catch (e) { return null; }
-  };
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      const decoded = parseJwt(token);
-      const studentUserId = decoded?.id; // Nxjerr id e përdoruesit
-
-      if (studentUserId) {
-        // Thërrasim API-në e re që shtuam në backend
-        axios.get(`http://localhost:5000/api/student/${studentUserId}/announcements`)
-          .then(res => {
-            setNjoftimet(res.data);
-          })
-          .catch(err => console.error("Gabim gjatë ngarkimit të njoftimeve:", err));
+    const fetchNjoftimet = async () => {
+      try {
+        const userId = localStorage.getItem("userId"); 
+        // Sigurohuni që URL-ja përputhet me backend-in
+        const res = await axios.get(`http://localhost:5000/api/student/${userId}/announcements`);
+        
+        console.log("Rezultati:", res.data);
+        setNjoftimet(res.data);
+      } catch (err) {
+        console.error("Gabim gjatë fetch-it:", err);
+      } finally {
+        // Kjo pjesë e ndryshon gjendjen në false pasi të përfundojë kërkesa
+        setLoading(false);
       }
-    }
+    };
+
+    fetchNjoftimet();
   }, []);
 
   return (
-    <div className="p-6">
-      {/* Kjo është pjesa e njoftimeve ku do të renditen ato që publikon profesori */}
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-slate-900 mb-4">Njoftimet e Fundit</h2>
-        
-        <div className="space-y-4">
-          {njoftimet.length === 0 ? (
-            <p className="text-slate-400 font-medium text-sm">Nuk ka asnjë njoftim të ri nga profesorët tuaj.</p>
+    <div className="flex h-screen bg-gray-100">
+      <Sidebar />
+      
+      <main className="flex-1 flex flex-col items-center p-8 overflow-y-auto">
+        <div className="w-full max-w-2xl">
+          <h1 className="text-2xl font-bold mb-6 text-gray-800">Mesazhet e mia</h1>
+
+          {loading ? (
+            <p>Duke ngarkuar...</p>
+          ) : njoftimet.length === 0 ? (
+            <div className="bg-white p-6 rounded-xl shadow-sm border text-center">
+              <p className="text-gray-500">Nuk keni asnjë njoftim të ri nga profesorët.</p>
+            </div>
           ) : (
-            njoftimet.map((n) => (
-              <div key={n.id} className="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                    {n.emri_lendes}
-                  </span>
-                  <span className="text-xs text-slate-400 font-medium">
-                    {new Date(n.createdAt).toLocaleDateString('sq-AL')}
-                  </span>
+            <div className="space-y-4">
+              {njoftimet.map((n, i) => (
+                <div key={i} className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500 transition-all hover:shadow-md">
+                  <h3 className="font-bold text-lg text-blue-900">{n.titulli || n.title}</h3>
+                  <p className="text-gray-700 mt-2">{n.permbajtja || n.content}</p>
+                  <div className="mt-4 flex justify-between items-center">
+                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                      {n.kursi}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {n.data_postimit ? new Date(n.data_postimit).toLocaleDateString() : ''}
+                    </span>
+                  </div>
                 </div>
-                <h4 className="font-bold text-slate-900 text-base mb-1">{n.title}</h4>
-                <p className="text-slate-600 text-sm font-medium mb-3 whitespace-pre-line">{n.content}</p>
-                <div className="text-xs text-slate-400 font-semibold">
-                  Nga prof. <span className="text-slate-500">{n.prof_emri} {n.prof_mbiemri}</span>
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
-}
+};
 
-export default StudentDashboard;
+export default Messages;

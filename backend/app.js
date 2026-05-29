@@ -832,17 +832,24 @@ app.get('/api/all-courses', async (req, res) => {
 });
 // 3. Për faqen "Orari Im"
 app.get('/api/schedule', async (req, res) => {
-    const sId = req.query.student_id || 1;
     try {
-        const [schedules] = await sequelize.query(`
-            SELECT s.*, c.emri_kursit AS name FROM schedules s 
-            JOIN enrollments e ON s.course_id = e.course_id 
-            JOIN courses c ON c.id = s.course_id
+        const studentId = req.query.student_id;
+        if (!studentId) return res.status(400).json({ error: "ID e studentit mungon" });
+
+        // Ky Query i bashkon oraret me lëndët e regjistruara
+        const query = `
+            SELECT s.id, s.dita, s.ora_fillimit, s.ora_mbarimit, s.salla, c.emertimi
+            FROM schedules s
+            JOIN enrollments e ON s.course_id = e.course_id
+            JOIN courses c ON s.course_id = c.id
             WHERE e.student_id = ?
-        `, { replacements: [sId] });
-        return res.json(schedules || []);
+        `;
+        
+        const [results] = await sequelize.query(query, { replacements: [studentId] });
+        res.json(results);
     } catch (err) {
-        return res.status(500).json({ error: err.message });
+        console.error("Gabim në server:", err); // Kjo do të tregojë pse po jep 500
+        res.status(500).json({ error: err.message });
     }
 });
 app.get('/api/professor/my-schedule', async (req, res) => {
@@ -884,6 +891,28 @@ app.get('/api/professor/my-schedule', async (req, res) => {
         res.status(500).json({ Error: err.message });
     }
 });
+app.get('/api/student/:user_id/schedule', async (req, res) => {
+    try {
+        const userId = req.params.user_id;
+        
+        // Ky Query bën lidhjen e shumëfishtë: User -> Student -> Enrollment -> Schedule -> Course
+        const query = `
+            SELECT s.id, s.dita, s.ora_fillimit, s.ora_mbarimit, s.salla, c.emertimi
+            FROM schedules s
+            JOIN enrollments e ON s.course_id = e.course_id
+            JOIN courses c ON s.course_id = c.id
+            JOIN students st ON e.student_id = st.id
+            WHERE st.user_id = ?
+            ORDER BY FIELD(s.dita, 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte'), s.ora_fillimit
+        `;
+        
+        const [results] = await sequelize.query(query, { replacements: [userId] });
+        res.json(results);
+    } catch (err) {
+        console.error("Gabim në server:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
 // =========================================================================
 // MODULI SHTESË PËR NJOFTIMET (VERSIONI I PASTRUAR DHE FINAL - PHPMYADMIN)
 // =========================================================================
@@ -904,23 +933,46 @@ app.post('/api/professor/announcements', async (req, res) => {
         res.status(500).json({ Error: err.message });
     }
 });
-// 2. API për Profesorin: Shfaq njoftimet poshtë formës së tij
-app.get('/api/professor/:userId/announcements', async (req, res) => {
+// API për Njoftimet
+app.get('/api/student/:user_id/announcements', async (req, res) => {
     try {
-        // Marrim të gjitha njoftimet nga tabela
+        const userId = req.params.user_id; // Kjo merr 31 nga URL-ja
+        
+        // Ky query lidh gjithçka: nga user-i, te studenti, te regjistrimi, te kursi, te njoftimi
         const query = `
-            SELECT id, titulli AS title, permbajtja AS content, course_id 
-            FROM announcements 
-            ORDER BY id DESC
+            SELECT a.titulli, a.permbajtja, a.data_postimit, c.emertimi AS kursi
+            FROM announcements a
+            JOIN courses c ON a.course_id = c.id
+            JOIN enrollments e ON c.id = e.course_id
+            JOIN students st ON e.student_id = st.id
+            WHERE st.user_id = ?
         `;
-        const [results] = await sequelize.query(query);
+        
+        const [results] = await sequelize.query(query, { replacements: [userId] });
         res.json(results);
     } catch (err) {
-        console.error("Gabim gjatë marrjes së njoftimeve:", err);
-        res.status(500).json({ Error: err.message });
+        console.error("Gabim në server:", err);
+        res.status(500).json({ error: err.message });
     }
 });
-
+app.get('/api/student/:user_id/schedule', async (req, res) => {
+    try {
+        const userId = req.params.user_id;
+        // Ky Query gjen studentin lidhur me user-in, pastaj gjen orarin
+        const query = `
+            SELECT s.dita, s.ora_fillimit, s.ora_mbarimit, s.salla, c.emertimi
+            FROM schedules s
+            JOIN enrollments e ON s.course_id = e.course_id
+            JOIN courses c ON s.course_id = c.id
+            JOIN students st ON e.student_id = st.id
+            WHERE st.user_id = ?
+        `;
+        const [results] = await sequelize.query(query, { replacements: [userId] });
+        res.json(results);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 app.post('/api/enrollments', async (req, res) => {
     try {
         const { student_id, course_id } = req.body;
@@ -983,7 +1035,6 @@ const courseRoutes = require('./routes/courseRoutes');
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/courses', courseRoutes);
 
-// NDRYSHIMI: U hoq { alter: true } që të mos bllokohet më MySQL
 sequelize.sync().then(() => {
     console.log('Database synced successfully!');
     app.listen(5000, () => {

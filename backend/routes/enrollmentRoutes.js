@@ -39,6 +39,7 @@ router.get('/my-courses', async (req, res) => {
     }
 });
 
+
 // 4. ANULIMI I NJË REGJISTRIMI (DELETE)
 // 2. Rruga për çregjistrim (DELETE)
 router.delete('/drop/:id', async (req, res) => {
@@ -66,8 +67,7 @@ router.get('/professor/students/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
         
-        // Ky Query i lidh të gjitha tabelat saktë:
-        // p = professors, c = courses, e = enrollments, s = students, u = users
+
 const query = `
     SELECT u.firstname, u.lastname, c.emertimi, e.data_regjistrimit, 'Aktiv' AS statusi 
     FROM enrollments e
