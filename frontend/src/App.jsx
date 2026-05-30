@@ -23,6 +23,9 @@ import ProfessorSchedule from "./pages/Dashboard/ProfessorSchedule";
 // Importi i ri për shtimin e orarit nga Admini
 import AddSchedule from "./pages/Dashboard/AddSchedule";
 
+import AdminDepartments from './pages/Dashboard/AdminDepartments'; 
+import AdminWaitingList from './pages/Dashboard/AdminWaitingList';
+
 // Komponenti i mbrojtjes - Pranon si string ashtu edhe masiv (Array) që të mos kesh konflikt
 const ProtectedRoute = ({ children, allowedRole, allowedRoles }) => {
   const userRole = localStorage.getItem("role");
@@ -173,7 +176,13 @@ function App() {
               <TeacherDashboard />
             </ProtectedRoute>
           } 
+
+          
         />
+
+        {/* Rrugët  për Departamentet dhe Listën e Pritjes */}
+        <Route path="/departments" element={<AdminDepartments />} />
+        <Route path="/waiting-list" element={<AdminWaitingList />} />
 
 <Route 
   path="/EnrolledStudents" 

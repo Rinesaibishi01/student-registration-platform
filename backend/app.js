@@ -1035,6 +1035,13 @@ const courseRoutes = require('./routes/courseRoutes');
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/courses', courseRoutes);
 
+const departmentRoutes = require('./routes/departmentRoutes');
+const waitinglistRoutes = require('./routes/waitinglistRoutes');
+
+// Përdorimi i rrugëve
+app.use('/api/departments', departmentRoutes);
+app.use('/api/waitinglist', waitinglistRoutes);
+
 sequelize.sync().then(() => {
     console.log('Database synced successfully!');
     app.listen(5000, () => {

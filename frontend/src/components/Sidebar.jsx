@@ -5,13 +5,15 @@ function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const menuItems = [
+ const menuItems = [
     { name: "Dashboard", path: "/dashboard-admin", icon: "🏠" },
-    { name: "Studentët", path: "/students", icon: "🎓" }, 
+    { name: "Studentët", path: "/students", icon: "🎓" },
     { name: "Profesorët", path: "/teachers", icon: "👨‍🏫" },
     { name: "Kurset", path: "/courses", icon: "📚" },
-    { name: "Semestrat", path: "/semesters", icon: "🗓️" },
-    { name: "Shto Orar", path: "/add-schedule", icon: "📅" },
+    { name: "Semestrat", path: "/semesters", icon: "📅" },
+    { name: "Shto Orar", path: "/add-schedule", icon: "🗓️" },
+    { name: "Departamentet", path: "/departments", icon: "🏢" },
+    { name: "Lista e pritjes", path: "/waiting-list", icon: "⌛" } 
   ];
 
   const handleLogout = () => {
