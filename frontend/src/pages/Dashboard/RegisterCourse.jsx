@@ -42,42 +42,39 @@ const RegisterCourse = () => {
 
   // Funksioni që ekzekutohet kur klikohet butoni për t'u regjistruar
 // ZËVENDËSO KËTË PJESË NË KODIN TËND:
+// Zëvendëso funksionin tënd ekzistues handleEnroll me këtë:
 const handleEnroll = async (courseId) => {
-    // Marrja e sigurt e ID-së: Kontrollon disa vende ku mund të jetë ruajtur
     const userStorage = localStorage.getItem('user');
     let sId = localStorage.getItem('userId');
 
-    // Nëse nuk është te userId, shiko mos është te user (si objekt JSON)
     if (!sId && userStorage) {
-        try {
-            sId = JSON.parse(userStorage).id;
-        } catch (e) { console.error("Gabim parsing user"); }
+        try { sId = JSON.parse(userStorage).id; } catch (e) { console.error("Gabim parsing user"); }
     }
 
     if (!sId) {
-        alert("Gabim: Nuk u gjet ID e studentit. Ju lutem logohuni përsëri!");
+        alert("Gabim: Ju lutem logohuni përsëri!");
         return;
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/student/register-course', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ student_id: Number(sId), course_id: Number(courseId) })
-      });
+        // VËREJTJE: Këtu ndryshojmë endpoint-in në 'add-to-waiting-list'
+        const response = await fetch('http://localhost:5000/api/add-to-waiting-list', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ student_id: Number(sId), course_id: Number(courseId) })
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (data.Status === "Success") {
-        alert("Sukses: U regjistruat në lëndë!");
-        fetchCourses(); 
-      } else {
-        alert("Njoftim: " + (data.Error || "Dështoi regjistrimi"));
-      }
+        if (data.Status === "Success") {
+            alert("Sukses: Kërkesa juaj është dërguar për shqyrtim nga administratori!");
+        } else {
+            alert("Njoftim: " + (data.Error || "Dështoi dërgimi i kërkesës"));
+        }
     } catch (err) {
-      alert("Gabim në lidhje me serverin.");
+        alert("Gabim në lidhje me serverin.");
     }
-  };
+};
   
   if (loading) {
     return (

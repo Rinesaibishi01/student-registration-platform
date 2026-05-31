@@ -70,4 +70,7 @@ const AdminDepartments = () => {
     </div>
   );
 };
+
+
 export default AdminDepartments;
+

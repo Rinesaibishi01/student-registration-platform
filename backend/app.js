@@ -991,6 +991,30 @@ app.post('/api/enrollments', async (req, res) => {
     }
 });
 
+// Sigurohu që kjo rrugë ekziston në backend
+app.delete('/api/waiting-list/delete/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        await WaitingList.destroy({ where: { id: id } });
+        res.status(200).json({ message: "U fshi me sukses!" });
+    } catch (err) {
+        res.status(500).json({ Error: "Dështoi fshirja" });
+    }
+});
+app.delete('/api/enrollments/delete/:id', async (req, res) => {
+    try {
+        const enrollmentId = req.params.id; // Kjo është ID-ja e rreshtit (60, 61, etj)
+        const deleted = await Enrollment.destroy({ where: { id: enrollmentId } });
+        
+        if (deleted === 0) {
+            return res.status(404).json({ error: "Regjistrimi nuk u gjet" });
+        }
+        res.status(200).json({ message: "U fshi me sukses!" });
+    } catch (err) {
+        res.status(500).json({ error: "Gabim në server" });
+    }
+});
+
 app.get('/api/all-courses', async (req, res) => {
     try {
         const query = `
@@ -1025,7 +1049,42 @@ app.post('/api/register', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+app.post('/api/add-to-waiting-list', async (req, res) => {
+    try {
+        const { student_id, course_id } = req.body; // Këtu po vjen 36 (që është user_id)
+        
+        // Gjej ID-në reale të studentit ku user_id = 36
+        const student = await Student.findOne({ where: { user_id: student_id } });
+        
+        if (!student) {
+             return res.status(404).json({ Error: "Studenti nuk u gjet" });
+        }
 
+        // Regjistro me ID-në reale të studentit (p.sh. 16)
+        await WaitingList.create({ 
+            student_id: student.id, 
+            course_id: course_id, 
+            status: 'pending' 
+        });
+        
+        res.status(201).json({ Status: "Success" });
+    } catch (err) {
+        res.status(500).json({ Error: err.message });
+    }
+});
+app.get('/api/waiting-list', async (req, res) => {
+    try {
+        const list = await WaitingList.findAll({
+            include: [{
+                model: Course,
+                attributes: ['kapaciteti'] // Marr vetëm kapacitetin për optimizim
+            }]
+        });
+        res.json(list);
+    } catch (err) {
+        res.status(500).json({ error: "Gabim në server" });
+    }
+});
 // ==========================================
 // INITIALIZIMI DHE NDEZJA E SERVERIT
 // ==========================================
