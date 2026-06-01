@@ -12,7 +12,6 @@ function CreateAnnouncement() {
 
     const loggedInUserId = localStorage.getItem('userId') || 25; // Marrim id-në e profesorit
 
-    // 1. Merr lëndët e profesorit kur ngarkohet faqja
     useEffect(() => {
         axios.get(`http://localhost:5000/api/professor/${loggedInUserId}/courses`)
             .then(res => {
@@ -35,7 +34,6 @@ function CreateAnnouncement() {
             });
     }, [loggedInUserId]);
 
-    // 3. Funksioni kur klikohet butoni "Publiko Njoftimin"
     const handlePubliko = (e) => {
         e.preventDefault();
 
@@ -44,7 +42,6 @@ function CreateAnnouncement() {
             return;
         }
 
-        // Paketojmë të dhënat ekzaktësisht siç i pret backend-i
         const data = {
             title: title,
             content: content,

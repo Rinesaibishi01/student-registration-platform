@@ -1,10 +1,9 @@
 const express = require('express');
 const router = express.Router();
-// Importo sequelize nga skedari yt db.js (sigurohu për rrugën e saktë)
 const sequelize = require('../config/db');
 const { QueryTypes } = require('sequelize');
 
-// 1. MARRJA E TË GJITHA REGJISTRIMEVE
+
 router.get('/', async (req, res) => {
     try {
         const enrollments = await Enrollment.findAll();
@@ -39,14 +38,10 @@ router.get('/my-courses', async (req, res) => {
     }
 });
 
-
-// 4. ANULIMI I NJË REGJISTRIMI (DELETE)
-// 2. Rruga për çregjistrim (DELETE)
 router.delete('/drop/:id', async (req, res) => {
     try {
         const { id } = req.params;
         
-        // Fshi regjistrimin duke përdorur ID-në e marrë nga parametri
         const deleted = await Enrollment.destroy({ 
             where: { id: id } 
         });
@@ -61,8 +56,7 @@ router.delete('/drop/:id', async (req, res) => {
         res.status(500).json({ Status: "Error", Message: err.message });
     }
 });
-// Në backend/routes/enrollmentRoutes.js
-// Te backend/routes/enrollmentRoutes.js
+
 router.get('/professor/students/:userId', async (req, res) => {
     try {
         const { userId } = req.params;

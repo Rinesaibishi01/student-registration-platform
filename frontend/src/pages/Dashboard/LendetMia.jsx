@@ -5,7 +5,7 @@ import TeacherSidebar from "../../components/TeacherSidebar";
 function LendetMia() {
   const [kurset, setKurset] = useState([]);
   
-  // MARRJA DINAMIKE: Merr ID-në e saktë të profesorit të kyçur nga localStorage
+  // MARRJA DINAMIKE: Merr ID-në profesorit të kyçur nga localStorage
   const professorId = localStorage.getItem("userId"); 
 
   useEffect(() => {

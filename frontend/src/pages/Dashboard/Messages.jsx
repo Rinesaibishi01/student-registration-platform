@@ -10,7 +10,6 @@ const Messages = () => {
     const fetchNjoftimet = async () => {
       try {
         const userId = localStorage.getItem("userId"); 
-        // Sigurohuni që URL-ja përputhet me backend-in
         const res = await axios.get(`http://localhost:5000/api/student/${userId}/announcements`);
         
         console.log("Rezultati:", res.data);
@@ -18,7 +17,6 @@ const Messages = () => {
       } catch (err) {
         console.error("Gabim gjatë fetch-it:", err);
       } finally {
-        // Kjo pjesë e ndryshon gjendjen në false pasi të përfundojë kërkesa
         setLoading(false);
       }
     };

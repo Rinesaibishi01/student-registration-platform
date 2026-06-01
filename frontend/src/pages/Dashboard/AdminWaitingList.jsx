@@ -7,7 +7,6 @@ const AdminWaitingList = () => {
 
   const fetchWaitingList = async () => {
     try {
-      // Backend-i duhet të kthejë të dhënat e lidhura (include: [Student, Course])
       const res = await axios.get('http://localhost:5000/api/waiting-list');
       setList(res.data);
     } catch (err) { 
@@ -22,7 +21,6 @@ const AdminWaitingList = () => {
   const handleApprove = async (item) => {
     if (window.confirm("A jeni të sigurt që doni ta pranoni këtë student?")) {
       try {
-        // Përdorim endpoint-in e duhur sipas app.js (rreshti 976)
         await axios.post('http://localhost:5000/api/enrollments', {
           student_id: item.student_id,
           course_id: item.course_id

@@ -5,7 +5,6 @@ const Schedule = () => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Marrim user_id nga localStorage (sigurohu që te Logini e ke ruajtur si 'userId' ose 'student_id')
   const userId = localStorage.getItem("userId") || localStorage.getItem("student_id");
 
   useEffect(() => {
@@ -15,7 +14,6 @@ const Schedule = () => {
         return;
       }
       try {
-        // Thërrasim API-në e re që e krijuam në Backend
         const res = await fetch(`http://localhost:5000/api/student/${userId}/schedule`);
         const data = await res.json();
         setSchedules(Array.isArray(data) ? data : []);

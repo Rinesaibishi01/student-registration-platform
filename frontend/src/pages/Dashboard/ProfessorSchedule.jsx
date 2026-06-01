@@ -6,7 +6,6 @@ function ProfessorSchedule() {
   const [orari, setOrari] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Funksion standard për të deshifruar një JWT token në frontend (Merr ID-në 23)
   const parseJwt = (token) => {
     try {
       const base64Url = token.split('.')[1];
@@ -32,10 +31,8 @@ function ProfessorSchedule() {
       return;
     }
 
-    // Deshifrojmë token-in që të gjejmë ID-në e saktë të përdoruesit (user_id)
     const decoded = parseJwt(token);
     
-    // Marrim id-në (që në rastin tënd është 23)
     const userId = decoded?.id || decoded?.userId || decoded?.user_id;
 
     if (!userId) {
@@ -44,7 +41,6 @@ function ProfessorSchedule() {
       return;
     }
 
-    // Thërrasim rrugën ekzakte të backend-it tënd origjinal duke kaluar userId si parametër
     axios.get(`http://localhost:5000/api/professor/${userId}/schedule`)
       .then((res) => {
         setOrari(res.data);

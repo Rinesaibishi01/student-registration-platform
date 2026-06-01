@@ -18,7 +18,6 @@ function Student() {
     viti_studimit: ""
   });
 
-// Ky funksion tani është i "stabilizuar" dhe nuk ndryshon në çdo renderim
   const fetchStudents = useCallback(async () => {
     try {
       const res = await axios.get("http://localhost:5000/get-students");
@@ -26,7 +25,7 @@ function Student() {
     } catch (error) {
       console.error("Gabim gjatë marrjes së të dhënave:", error);
     }
-  }, []); // Këto kllapa bosh janë ato që e heqin gabimin
+  }, []); 
 
 useEffect(() => {
     fetchStudents();
@@ -79,18 +78,17 @@ const handleSubmit = async (e) => {
       if (isEditing) {
         response = await axios.put(`http://localhost:5000/update-student/${editId}`, studentData);
       } else {
-        // TRUKU: Në vend të /add-student që jep 404, përdorim /register që funksionon patjetër!
-        // Përshtatim emrat e fushave që i kërkon backend-i te /register
+        
         const registerData = {
           firstname: studentData.emri,
           lastname: studentData.mbiemri,
           email: studentData.email,
-          password: "student12345" // Fjalëkalim default
+          password: "student12345" 
         };
         response = await axios.post("http://localhost:5000/register", registerData);
       }
 
-      // Backend-i te /register kthen Status === "Success"
+    
       if (response.data && response.data.Status === "Success") {
         Swal.fire('Sukses!', 'Studenti u shtua me sukses!', 'success');
         setShowModal(false);
@@ -98,7 +96,7 @@ const handleSubmit = async (e) => {
         setEditId(null);
         setStudentData({ emri: "", mbiemri: "", email: "", numri_studentit: "", programi: "", viti_studimit: "" });
         
-        // Rifreskojmë listën automatikisht
+       
         fetchStudents();
       } else {
         Swal.fire('Gabim!', response.data.Message || 'Ndodhi një problem.', 'error');

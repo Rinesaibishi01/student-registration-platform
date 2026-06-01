@@ -9,11 +9,10 @@ function DashboardTeachers() {
   });
 
   const [teachersList, setTeachersList] = useState([]);
-  const [departments, setDepartments] = useState([]); // State për departamentet
+  const [departments, setDepartments] = useState([]); 
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
 
-  // Merr profesorët
   const fetchTeachers = useCallback(async () => {
     try {
       const res = await axios.get("http://localhost:5000/get-teachers");
@@ -21,7 +20,6 @@ function DashboardTeachers() {
     } catch (error) { console.error(error); }
   }, []);
 
-  // Merr departamentet për dropdown
   useEffect(() => {
     fetchTeachers();
     axios.get("http://localhost:5000/api/departments")

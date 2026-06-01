@@ -6,7 +6,6 @@ const RegisterCourse = () => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  // Marrim ID-në e studentit të kyçur nga localStorage
   const userStorage = localStorage.getItem('user');
   let studentId = localStorage.getItem('userId') || localStorage.getItem('studentId');
 
@@ -18,10 +17,8 @@ const RegisterCourse = () => {
     }
   }
   
-  // Nëse nuk ka ID në storage (p.sh. nuk jemi të kyçur si student), vendoset 2 si default për testim
   if (!studentId) studentId = 2;
 
-  // Funksioni për të mbushur listën e kurseve të lira në ekran
   const fetchCourses = async () => {
     try {
       const response = await fetch('http://localhost:5000/api/all-courses');
@@ -40,9 +37,6 @@ const RegisterCourse = () => {
     fetchCourses();
   }, []);
 
-  // Funksioni që ekzekutohet kur klikohet butoni për t'u regjistruar
-// ZËVENDËSO KËTË PJESË NË KODIN TËND:
-// Zëvendëso funksionin tënd ekzistues handleEnroll me këtë:
 const handleEnroll = async (courseId) => {
     const userStorage = localStorage.getItem('user');
     let sId = localStorage.getItem('userId');
@@ -57,7 +51,6 @@ const handleEnroll = async (courseId) => {
     }
 
     try {
-        // VËREJTJE: Këtu ndryshojmë endpoint-in në 'add-to-waiting-list'
         const response = await fetch('http://localhost:5000/api/add-to-waiting-list', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

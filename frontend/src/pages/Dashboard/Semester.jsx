@@ -11,7 +11,6 @@ const Semesters = () => {
   // 1. Funksioni për të marrë semestrat nga backend
   const fetchSemesters = async () => {
     try {
-      // Sigurohu që endpoint-i është i saktë në Backend (psh. /get-semesters)
       const res = await axios.get("http://localhost:5000/get-semesters");
       setSemesters(res.data);
     } catch (err) {
@@ -31,12 +30,10 @@ const Semesters = () => {
     e.preventDefault();
     try {
       if (isEditing) {
-        // Logjika për UPDATE
+        //  UPDATE
         await axios.put(`http://localhost:5000/update-semester/${editId}`, semesterData);
         alert("✅ Semestri u përditësua!");
       } else {
-        // Logjika jote ekzistuese për POST
-        // Kujdes: Sigurohu që rruga në backend të jetë ekzistuese (në foto ishte 404)
         await axios.post("http://localhost:5000/add-semester", semesterData);
         alert("✅ Semestri u shtua!");
       }

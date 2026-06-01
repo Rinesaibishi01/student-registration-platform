@@ -6,10 +6,8 @@ import Sidebar from "../../components/Sidebar";
 function Dashboard() {
   const navigate = useNavigate();
   
-  // Marrim emrin e adminit nga localStorage
   const adminName = localStorage.getItem("userName") || "Admin";
 
-  // State për të mbajtur statistikat live nga databaza
   const [liveStats, setLiveStats] = useState({
     students: 0,
     courses: 0,
@@ -17,7 +15,6 @@ function Dashboard() {
     announcements: 0
   });
 
-  // useEffect për të marrë të dhënat live sapo hapet faqja
   useEffect(() => {
     axios.get("http://localhost:5000/api/dashboard-stats")
       .then((res) => {
@@ -28,7 +25,6 @@ function Dashboard() {
       });
   }, []);
 
-  // Struktura e kartave e lidhur me kërkesat zyrtare të profesorit
   const statsConfig = [
     { title: "Studentë", count: liveStats.students, icon: "👨‍🎓", color: "bg-blue-50 text-blue-600" },
     { title: "Kurse", count: liveStats.courses, icon: "📘", color: "bg-indigo-50 text-indigo-600" },

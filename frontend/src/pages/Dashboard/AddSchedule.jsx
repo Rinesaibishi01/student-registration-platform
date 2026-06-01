@@ -10,7 +10,6 @@ function AddSchedule() {
     const [oraMbarimit, setOraMbarimit] = useState('');
     const [salla, setSalla] = useState('');
 
-    // Ngarko të gjitha lëndët nga databaza posa të hapet faqja
     useEffect(() => {
         axios.get('http://localhost:5000/api/admin/courses')
             .then(res => {

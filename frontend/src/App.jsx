@@ -8,6 +8,7 @@ import DashboardTeachers from "./pages/Dashboard/DashboardTeachers";
 import DashboardAdmin from "./pages/Dashboard/Dashboard-admin"; 
 import Courses from "./pages/Dashboard/Courses"; 
 import Semesters from "./pages/Dashboard/Semester";
+
 import TeacherDashboard from "./pages/Dashboard/TeacherDashboard";
 import EnrolledStudents from "./pages/Dashboard/EnrolledStudents";
 import LendetMia from "./pages/Dashboard/LendetMia";
@@ -26,7 +27,7 @@ import AddSchedule from "./pages/Dashboard/AddSchedule";
 import AdminDepartments from './pages/Dashboard/AdminDepartments'; 
 import AdminWaitingList from './pages/Dashboard/AdminWaitingList';
 
-// Komponenti i mbrojtjes - Pranon si string ashtu edhe masiv (Array) që të mos kesh konflikt
+// Komponenti i mbrojtjes 
 const ProtectedRoute = ({ children, allowedRole, allowedRoles }) => {
   const userRole = localStorage.getItem("role");
   
@@ -43,7 +44,6 @@ const ProtectedRoute = ({ children, allowedRole, allowedRoles }) => {
     return <Navigate to="/" replace />;
   }
 
-  // Kontrolli nëse është përdorur allowedRole="student"
   if (allowedRole && roleToCheck !== allowedRole.toLowerCase().trim()) {
     return <Navigate to="/" replace />;
   }

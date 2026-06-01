@@ -7,7 +7,7 @@ router.post('/add', waitinglistController.addToWaitingList);
 router.post('/add-to-waiting-list', async (req, res) => {
     try {
         const { student_id, course_id } = req.body;
-        // Shto në tabelën e pritjes (WaitingList)
+       
         await WaitingList.create({ 
             student_id, 
             course_id, 

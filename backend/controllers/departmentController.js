@@ -1,5 +1,4 @@
 const Department = require('../models/Department');
-
 exports.getAllDepartments = async (req, res) => {
     try {
         const deps = await Department.findAll();

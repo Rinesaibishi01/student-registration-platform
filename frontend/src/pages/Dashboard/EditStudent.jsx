@@ -23,7 +23,7 @@ function EditStudent() {
     axios.put(`http://localhost:5000/students/${id}`, values)
       .then(() => {
         Swal.fire("Sukses!", "Të dhënat u përditësuan.", "success");
-        navigate("/dashboard/students"); // Të kthen te lista e Dashboard-it
+        navigate("/dashboard/students"); 
       });
   };
 

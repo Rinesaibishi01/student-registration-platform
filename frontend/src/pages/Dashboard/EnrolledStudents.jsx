@@ -17,17 +17,17 @@ function EnrolledStudents() {
             }
 
             try {
-                // URL-ja duhet të jetë saktësisht me prefixin /api/enrollments
+            
                 const res = await axios.get(`http://localhost:5000/api/enrollments/professor/students/${professorUserId}`);
                 
-                // Nëse backend-i kthen të dhëna, i ruajmë
+                
                 if (res.data) {
                     setStudentet(res.data);
                 }
             } catch (err) {
                 console.error("Gabim gjatë marrjes së studentëve:", err);
             } finally {
-                setLoading(false); // Ndalo gjendjen e ngarkimit pavarësisht rezultatit
+                setLoading(false); 
             }
         };
 
